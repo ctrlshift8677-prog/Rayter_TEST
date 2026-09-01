@@ -274,7 +274,7 @@ function openRoster(brand, keep){
   hero.style.setProperty("--bc", brand.color);
   const logo = brand.logoC || brand.logoB;
   document.getElementById("rhLogo").innerHTML = logo
-    ? `<img src="${logo}" alt="${brand.zh}">`
+    ? `<img src="${logo}" class="${brand.lightLogo ? "logo-inv" : ""}" alt="${brand.zh}">`
     : `<span class="rh-word">${brand.en}</span>`;
   document.getElementById("rhEn").textContent = brand.en;
   document.getElementById("rhZh").textContent = brand.zh;
@@ -297,13 +297,13 @@ function openRoster(brand, keep){
     </div>`;
   }).join("");
   grid.querySelectorAll(".kol-card").forEach(c=>bindTilt(c,7));
-  if(!keep) document.getElementById("artist").scrollIntoView({behavior:reduced?"auto":"smooth"});
+  if(!keep) document.getElementById("brandRoster").scrollIntoView({behavior:reduced?"auto":"smooth"});
 }
 function closeRoster(){
   activeBrand = null;
   document.getElementById("brandIndex").hidden = false;
   document.getElementById("brandRoster").hidden = true;
-  document.getElementById("artist").scrollIntoView({behavior:reduced?"auto":"smooth"});
+  document.getElementById("brandIndex").scrollIntoView({behavior:reduced?"auto":"smooth"});
 }
 document.getElementById("rosterBack").addEventListener("click",closeRoster);
 
@@ -326,8 +326,6 @@ function openK(brandId, idx){
   const label = k ? k.n : "KOL " + pad2(idx+1);
   document.getElementById("kmMedia").innerHTML =
     k && k.img ? `<img src="${k.img}" alt="${label}">` : portraitSVG("m"+idx, b.color);
-  const lg = document.getElementById("kmLogo");
-  if (b.logoC || b.logoB){ lg.src = b.logoC || b.logoB; lg.hidden = false; } else lg.hidden = true;
   document.getElementById("kmTeam").textContent = "【" + (currentLang==="zh" ? b.zh : b.en) + "】";
   document.getElementById("kmName").textContent = label;
   document.getElementById("kmTags").innerHTML =

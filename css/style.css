@@ -520,9 +520,9 @@ section[id]{scroll-margin-top:92px}
 .km-media{position:relative;background:#EDECE7;min-height:340px}
 .km-media img,.km-media svg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 12%}
 .km-body{padding:34px 32px;display:flex;flex-direction:column;align-items:flex-start;gap:6px}
-.km-logo{height:34px;width:auto;max-width:170px;object-fit:contain;margin-bottom:14px}
+.logo-inv{background:#12161B;border-radius:14px;padding:16px 22px}
 .km-team{font-weight:700;font-size:13.5px;letter-spacing:.12em;color:var(--dim)}
-.km-name{font-weight:900;font-size:clamp(24px,3.4vw,34px);letter-spacing:.08em;line-height:1.3}
+.km-name{font-weight:900;font-size:clamp(24px,3.4vw,34px);letter-spacing:.08em;line-height:1.3;word-break:break-word}
 .km-line{width:44px;height:3px;background:var(--volt);margin:14px 0 16px}
 .km-tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
 .km-tags span{font-size:12px;font-weight:700;letter-spacing:.06em;color:var(--blue-hi);
@@ -549,9 +549,13 @@ a.soc:hover{background:var(--sc,#12161B);border-color:var(--sc,#12161B);color:#f
 .kol,.flow-card{cursor:pointer}
 @media (max-width:640px){
   .km-card{grid-template-columns:1fr;max-height:92vh}
-  .km-media{min-height:0;aspect-ratio:4/3.2}
-  .km-media img,.km-media svg{object-position:50% 18%}
-  .km-body{padding:24px 22px 30px}
+  .km-media{min-height:0;aspect-ratio:4/3}
+  .km-media img,.km-media svg{object-position:50% 16%}
+  .km-body{padding:22px 20px 8px}
+  .km-team{font-size:14.5px}
+  .km-name{font-size:25px}
+  .km-intro{font-size:13.5px}
+  .km-navs{position:static;order:99;justify-content:flex-end;padding:6px 20px 18px;width:100%}
 }
 body.km-lock{overflow:hidden}
 
