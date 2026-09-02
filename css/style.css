@@ -548,14 +548,60 @@ a.soc:hover{background:var(--sc,#12161B);border-color:var(--sc,#12161B);color:#f
 .km-nav:hover{background:#12161B;color:#fff;border-color:#12161B}
 .kol,.flow-card{cursor:pointer}
 @media (max-width:640px){
-  .km-card{grid-template-columns:1fr;max-height:92vh}
-  .km-media{min-height:0;aspect-ratio:4/3}
-  .km-media img,.km-media svg{object-position:50% 16%}
-  .km-body{padding:22px 20px 8px}
+  /* Mobile KOL modal: use a simple flex column instead of grid so the
+     image, content and navigation always stay in normal document flow. */
+  .kmodal{
+    align-items:flex-start;
+    padding:max(12px,env(safe-area-inset-top)) 12px max(12px,env(safe-area-inset-bottom));
+  }
+  .km-card{
+    display:flex;
+    flex-direction:column;
+    grid-template-columns:none;
+    width:100%;
+    max-height:calc(100dvh - max(24px,env(safe-area-inset-top) + env(safe-area-inset-bottom)));
+    overflow-x:hidden;
+    overflow-y:auto;
+    overscroll-behavior:contain;
+    -webkit-overflow-scrolling:touch;
+  }
+  .km-media{
+    position:relative;
+    flex:0 0 auto;
+    width:100%;
+    min-height:0;
+    aspect-ratio:4/3;
+    overflow:hidden;
+    z-index:0;
+  }
+  .km-media img,.km-media svg{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    object-position:50% 16%;
+  }
+  .km-body{
+    position:relative;
+    z-index:1;
+    flex:0 0 auto;
+    width:100%;
+    background:#fff;
+    padding:22px 20px 8px;
+  }
   .km-team{font-size:14.5px}
   .km-name{font-size:25px}
   .km-intro{font-size:13.5px}
-  .km-navs{position:static;order:99;justify-content:flex-end;padding:6px 20px 18px;width:100%}
+  .km-navs{
+    position:static;
+    order:99;
+    flex:0 0 auto;
+    justify-content:flex-end;
+    padding:6px 20px 18px;
+    width:100%;
+    background:#fff;
+  }
 }
 body.km-lock{overflow:hidden}
 
