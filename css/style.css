@@ -542,13 +542,54 @@ section[id]{scroll-margin-top:92px}
 .kol-card{position:relative;border-radius:5px;overflow:hidden;
   border:1px solid var(--line);aspect-ratio:3/4.2;background:#fff;box-shadow:var(--shadow);
   transform-style:preserve-3d;will-change:transform;
-  transition:border-color .26s var(--ease),box-shadow .26s var(--ease)}
-.kol-card:hover{border-color:rgba(65,151,197,.4);box-shadow:var(--shadow-lg)}
+  transition:border-color .26s var(--ease),box-shadow .26s var(--ease),transform .22s var(--ease-out)}
+.kol-card:hover{border-color:color-mix(in srgb,var(--fc,var(--blue)) 52%,transparent);box-shadow:0 24px 52px -26px color-mix(in srgb,var(--fc,var(--blue)) 50%,transparent)}
 .kol-card svg,.kol-card img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 12%}
 .kol-card::after{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;z-index:4;background:var(--fc,var(--blue))}
-.kol-card .k-name{position:absolute;left:0;right:0;bottom:0;padding:34px 14px 13px;z-index:3;
+.kol-card .k-name{position:absolute;left:0;right:0;bottom:0;padding:34px 14px 13px;z-index:5;
   background:linear-gradient(transparent,rgba(10,14,19,.9) 62%);
   font-weight:800;font-size:15px;letter-spacing:.1em;text-align:left;color:#fff}
+
+/* Shared creator-card interaction: pointer depth, a brand-colour scan and precise UI corners. */
+.talent-card{--mx:50%;--my:50%;isolation:isolate;transform-style:preserve-3d;backface-visibility:hidden;contain:paint}
+.talent-card img,.talent-card>svg{
+  transition:transform .52s var(--ease-out),filter .52s var(--ease-out)}
+.card-tech{position:absolute;inset:8px;z-index:3;pointer-events:none;opacity:.38;
+  background:
+    radial-gradient(circle at var(--mx) var(--my),color-mix(in srgb,var(--fc,var(--blue)) 25%,transparent),transparent 35%),
+    linear-gradient(var(--fc,var(--blue)),var(--fc,var(--blue))) left top/20px 1px no-repeat,
+    linear-gradient(var(--fc,var(--blue)),var(--fc,var(--blue))) left top/1px 20px no-repeat,
+    linear-gradient(var(--fc,var(--blue)),var(--fc,var(--blue))) right top/20px 1px no-repeat,
+    linear-gradient(var(--fc,var(--blue)),var(--fc,var(--blue))) right top/1px 20px no-repeat,
+    linear-gradient(var(--fc,var(--blue)),var(--fc,var(--blue))) left bottom/20px 1px no-repeat,
+    linear-gradient(var(--fc,var(--blue)),var(--fc,var(--blue))) left bottom/1px 20px no-repeat,
+    linear-gradient(var(--fc,var(--blue)),var(--fc,var(--blue))) right bottom/20px 1px no-repeat,
+    linear-gradient(var(--fc,var(--blue)),var(--fc,var(--blue))) right bottom/1px 20px no-repeat;
+  transition:opacity .25s var(--ease),inset .36s var(--ease-out)}
+.card-scan{position:absolute;inset:-16% -52%;z-index:3;pointer-events:none;opacity:0;
+  background:linear-gradient(105deg,transparent 39%,rgba(255,255,255,.08) 44%,rgba(255,255,255,.82) 49%,color-mix(in srgb,var(--fc,var(--blue)) 52%,transparent) 52%,transparent 61%);
+  mix-blend-mode:screen;transform:translateX(-52%) skewX(-11deg)}
+.card-open{position:absolute;top:12px;right:12px;z-index:5;width:31px;height:31px;
+  display:grid;place-items:center;background:#fff;color:#111820;border:1px solid color-mix(in srgb,var(--fc,var(--blue)) 45%,var(--line));
+  box-shadow:0 9px 24px rgba(15,29,40,.16);font-family:var(--font-en);font-size:15px;line-height:1;
+  opacity:0;transform:translate(-7px,7px) scale(.82);transition:opacity .24s var(--ease),transform .36s var(--ease-out),background .22s var(--ease),color .22s var(--ease)}
+.talent-card:hover .card-tech,.talent-card:focus-visible .card-tech{inset:6px;opacity:.82}
+.talent-card:hover .card-scan,.talent-card:focus-visible .card-scan{animation:talentScan .74s var(--ease-out) both}
+.talent-card:hover img,.talent-card:hover>svg,.talent-card:focus-visible img,.talent-card:focus-visible>svg{
+  transform:scale(1.055) translateY(-3px);filter:saturate(1.07) contrast(1.025)}
+.talent-card:hover .card-open,.talent-card:focus-visible .card-open{opacity:1;transform:translateZ(18px)}
+.talent-card:focus-visible{outline:2px solid var(--fc,var(--blue));outline-offset:3px}
+@keyframes talentScan{
+  0%{opacity:0;transform:translateX(-52%) skewX(-11deg)}
+  18%{opacity:.92}
+  100%{opacity:0;transform:translateX(54%) skewX(-11deg)}
+}
+@media (pointer:coarse){
+  .card-tech{opacity:.56}
+  .card-open{opacity:.9;transform:none}
+  .talent-card:active .card-scan{animation:talentScan .62s var(--ease-out) both}
+  .talent-card:active{transform:scale(.985)}
+}
 
 /* ================= Contact ================= */
 .contact-wrap{display:grid;grid-template-columns:.76fr 1.24fr;gap:68px;padding-bottom:40px;align-items:start}
@@ -600,20 +641,21 @@ section[id]{scroll-margin-top:92px}
   animation:flowL var(--dur,64s) linear infinite}
 .flow-row.rev .flow-track{animation-name:flowR}
 .flow-row:hover .flow-track{animation-play-state:paused}
+body.km-lock .flow-track{animation-play-state:paused}
 @keyframes flowL{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 @keyframes flowR{from{transform:translateX(-50%)}to{transform:translateX(0)}}
 .flow-card{position:relative;flex:none;width:216px;overflow:hidden;border-radius:5px;
   border:1px solid var(--line);background:#fff;
   transition:border-color .25s var(--ease),transform .3s var(--ease),box-shadow .3s var(--ease)}
 .flow-card::before{content:"";display:block;padding-top:125%}
-.flow-card::after{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--fc,var(--blue))}
+.flow-card::after{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;z-index:5;background:var(--fc,var(--blue))}
 .flow-card svg,.flow-card img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 12%}
-.flow-card .fc-tag{position:absolute;left:0;bottom:3px;z-index:2;max-width:100%;
+.flow-card .fc-tag{position:absolute;left:0;bottom:3px;z-index:5;max-width:100%;
   background:#12161B;color:#fff;font-weight:700;font-size:13px;letter-spacing:.1em;
   padding:4px 10px;border-radius:0 6px 0 0;white-space:nowrap;
   transform:translateY(101%);transition:transform .28s var(--ease)}
-.flow-card:hover{border-color:rgba(65,151,197,.5);transform:translateY(-4px);
-  box-shadow:0 16px 30px -18px rgba(20,45,70,.35)}
+.flow-card:hover{border-color:color-mix(in srgb,var(--fc,var(--blue)) 54%,transparent);transform:translateY(-4px);
+  box-shadow:0 22px 42px -22px color-mix(in srgb,var(--fc,var(--blue)) 58%,rgba(20,45,70,.35))}
 .flow-card:hover .fc-tag{transform:none}
 .flow-a{margin-bottom:50px}
 @media (max-width:640px){
@@ -629,27 +671,49 @@ section[id]{scroll-margin-top:92px}
 @media (prefers-reduced-motion:reduce){.flow-track{animation:none}}
 
 /* ================= KOL modal ================= */
-.kmodal{position:fixed;inset:0;z-index:120;display:flex;align-items:center;justify-content:center;padding:20px}
+.kmodal{--kc:var(--blue);position:fixed;inset:0;z-index:120;display:flex;align-items:center;justify-content:center;padding:20px}
 .kmodal[hidden]{display:none}
-.km-backdrop{position:absolute;inset:0;background:rgba(12,16,21,.5);
-  opacity:0;transition:opacity .3s var(--ease)}
+.km-backdrop{position:absolute;inset:0;background-color:rgba(8,16,23,.6);
+  background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);
+  background-size:56px 56px;backdrop-filter:blur(10px) saturate(.82);
+  opacity:0;transition:opacity .38s var(--ease)}
 .kmodal.open .km-backdrop{opacity:1}
-.km-card{position:relative;z-index:1;width:min(720px,94vw);max-height:88vh;overflow:auto;
-  background:#fff;border-radius:6px;box-shadow:0 40px 90px -30px rgba(10,25,45,.5);
-  display:grid;grid-template-columns:300px 1fr;
+.kmodal.closing-to-card .km-backdrop{opacity:0}
+.km-card{--kc:var(--blue);position:relative;z-index:1;width:min(860px,94vw);max-height:88vh;overflow:auto;isolation:isolate;
+  background:#fff;border:1px solid color-mix(in srgb,var(--kc) 40%,var(--line));border-radius:4px;
+  box-shadow:0 48px 110px -34px rgba(5,18,30,.72),0 0 0 1px rgba(255,255,255,.46) inset;
+  display:grid;grid-template-columns:minmax(300px,360px) 1fr;
   opacity:0;transform:translateY(22px) scale(.97);
-  transition:opacity .35s var(--ease-out),transform .35s var(--ease-out)}
+  transition:opacity .38s var(--ease-out),transform .48s var(--ease-out)}
+.km-card::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;z-index:8;
+  background:linear-gradient(90deg,var(--kc),var(--volt) 44%,transparent 82%);pointer-events:none}
+.km-card::after{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;opacity:.42;
+  background-image:radial-gradient(circle,color-mix(in srgb,var(--kc) 27%,transparent) .7px,transparent .8px);
+  background-size:14px 14px;mask-image:linear-gradient(110deg,transparent 38%,#000 100%)}
 .kmodal.open .km-card{opacity:1;transform:none}
-.km-media{position:relative;background:#EDECE7;min-height:340px}
+.kmodal.preparing .km-card{opacity:0;transform:none;transition:none}
+.kmodal.open.from-card .km-card{transition:none;animation:kmCardExtend .66s var(--ease-out) both}
+.km-media{position:relative;z-index:1;background:#EDECE7;min-height:460px;overflow:hidden}
+.km-media::before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:linear-gradient(180deg,rgba(8,15,21,.16),transparent 24%,transparent 68%,color-mix(in srgb,var(--kc) 28%,transparent))}
 .km-media img,.km-media svg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 12%}
-.km-body{padding:34px 32px;display:flex;flex-direction:column;align-items:flex-start;gap:6px}
+.km-media-tech{position:absolute;inset:12px;z-index:2;pointer-events:none;
+  background:
+    linear-gradient(var(--kc),var(--kc)) left top/30px 1px no-repeat,
+    linear-gradient(var(--kc),var(--kc)) left top/1px 30px no-repeat,
+    linear-gradient(var(--kc),var(--kc)) right bottom/30px 1px no-repeat,
+    linear-gradient(var(--kc),var(--kc)) right bottom/1px 30px no-repeat}
+.km-media-tech::after{content:"";position:absolute;left:-12px;right:-12px;top:15%;height:1px;
+  background:linear-gradient(90deg,transparent,var(--kc) 18%,rgba(255,255,255,.92) 50%,var(--kc) 82%,transparent);
+  box-shadow:0 0 16px color-mix(in srgb,var(--kc) 70%,transparent);opacity:0}
+.km-body{position:relative;z-index:1;padding:46px 38px 38px;display:flex;flex-direction:column;align-items:flex-start;gap:6px}
 .logo-inv{background:#12161B;border-radius:14px;padding:16px 22px}
-.km-team{font-weight:700;font-size:13.5px;letter-spacing:.12em;color:var(--dim)}
+.km-team{font-family:var(--font-en);font-weight:700;font-size:12px;letter-spacing:.18em;color:var(--kc)}
 .km-name{font-weight:900;font-size:clamp(24px,3.4vw,34px);letter-spacing:.08em;line-height:1.3;word-break:break-word}
-.km-line{width:44px;height:3px;background:var(--volt);margin:14px 0 16px}
+.km-line{width:64px;height:3px;background:linear-gradient(90deg,var(--kc),var(--volt));margin:14px 0 16px}
 .km-tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
-.km-tags span{font-size:12px;font-weight:700;letter-spacing:.06em;color:var(--blue-hi);
-  background:var(--blue-soft);border-radius:100px;padding:5px 13px}
+.km-tags span{font-size:12px;font-weight:700;letter-spacing:.06em;color:color-mix(in srgb,var(--kc) 82%,#13212c);
+  background:color-mix(in srgb,var(--kc) 11%,#fff);border:1px solid color-mix(in srgb,var(--kc) 24%,transparent);border-radius:100px;padding:5px 13px}
 .km-intro{font-size:14px;line-height:1.95;color:#414E59;white-space:pre-line;margin-bottom:18px}
 .km-socials{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px}
 .soc{width:40px;height:40px;border-radius:50%;border:1.5px solid var(--line);
@@ -659,16 +723,34 @@ section[id]{scroll-margin-top:92px}
 a.soc:hover{background:var(--sc,#12161B);border-color:var(--sc,#12161B);color:#fff;transform:translateY(-3px)}
 .soc.off{opacity:.32;cursor:default}
 .km-link{margin-top:auto;padding-top:22px}
-.km-close{position:absolute;top:12px;right:12px;z-index:2;width:38px;height:38px;border:none;border-radius:50%;
-  background:rgba(18,22,27,.85);color:#fff;font-size:19px;line-height:1;
+.km-close{position:absolute;top:11px;right:11px;z-index:9;width:34px;height:34px;border:1px solid color-mix(in srgb,var(--kc) 34%,var(--line));border-radius:2px;
+  background:rgba(255,255,255,.92);color:#1B252D;font-size:17px;line-height:1;box-shadow:0 8px 22px rgba(15,29,40,.12);
   display:flex;align-items:center;justify-content:center;
   transition:background .2s var(--ease),transform .2s var(--ease)}
-.km-close:hover{background:#000;transform:rotate(90deg)}
+.km-close:hover{background:var(--kc);color:#fff;transform:rotate(90deg)}
 .km-navs{position:absolute;right:14px;bottom:14px;z-index:3;display:flex;gap:10px}
-.km-nav{width:38px;height:38px;border-radius:50%;border:1.5px solid var(--line);background:#fff;
+.km-nav{width:38px;height:38px;border-radius:2px;border:1.5px solid var(--line);background:#fff;
   color:#39434C;font-size:19px;line-height:1;display:flex;align-items:center;justify-content:center;
   transition:background .2s var(--ease),color .2s var(--ease),border-color .2s var(--ease)}
-.km-nav:hover{background:#12161B;color:#fff;border-color:#12161B}
+.km-nav:hover{background:var(--kc);color:#fff;border-color:var(--kc)}
+.kmodal.open .km-media-tech::after{animation:kmMediaScan 1.15s .2s var(--ease-out) both}
+.kmodal.open .km-media img,.kmodal.open .km-media>svg{animation:kmPortraitIn .72s .06s var(--ease-out) both}
+.kmodal.open .km-body>*{animation:kmInfoIn .44s var(--ease-out) both}
+.kmodal.open .km-body>:nth-child(1){animation-delay:.16s}
+.kmodal.open .km-body>:nth-child(2){animation-delay:.21s}
+.kmodal.open .km-body>:nth-child(3){animation-delay:.25s}
+.kmodal.open .km-body>:nth-child(4){animation-delay:.29s}
+.kmodal.open .km-body>:nth-child(5){animation-delay:.33s}
+.kmodal.open .km-body>:nth-child(6){animation-delay:.37s}
+.kmodal.open .km-body>:nth-child(7){animation-delay:.41s}
+@keyframes kmCardExtend{
+  0%{opacity:.12;transform:translate3d(var(--km-from-x),var(--km-from-y),0) scale(var(--km-from-sx),var(--km-from-sy));filter:blur(1px)}
+  42%{opacity:1;filter:blur(0)}
+  100%{opacity:1;transform:none;filter:blur(0)}
+}
+@keyframes kmPortraitIn{0%{opacity:.45;transform:scale(1.09) translateX(-10px);filter:saturate(.7)}100%{opacity:1;transform:none;filter:none}}
+@keyframes kmInfoIn{0%{opacity:0;transform:translateY(13px)}100%{opacity:1;transform:none}}
+@keyframes kmMediaScan{0%{top:14%;opacity:0}14%{opacity:.9}82%{opacity:.65}100%{top:86%;opacity:0}}
 .kol,.flow-card{cursor:pointer}
 @media (max-width:640px){
   /* Mobile KOL modal: use a simple flex column instead of grid so the

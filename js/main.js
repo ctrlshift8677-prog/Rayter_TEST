@@ -276,7 +276,8 @@ function bindTilt(el, max){
   el.addEventListener("pointermove",e=>{
     const r = el.getBoundingClientRect();
     const px=(e.clientX-r.left)/r.width, py=(e.clientY-r.top)/r.height;
-    el.style.transform=`rotateY(${(px-.5)*2*m}deg) rotateX(${(.5-py)*2*m}deg)`;
+    const depth = el.classList.contains("talent-card") ? " translateZ(8px) scale(1.018)" : "";
+    el.style.transform=`perspective(900px) rotateY(${(px-.5)*2*m}deg) rotateX(${(.5-py)*2*m}deg)${depth}`;
     el.style.setProperty("--mx",(px*100)+"%");
     el.style.setProperty("--my",(py*100)+"%");
   });
@@ -457,11 +458,13 @@ function openRoster(brand, keep){
     const k = real && real[i] ? real[i] : null;
     const media = k && k.img ? `<img src="${k.img}" alt="${k.n}" loading="lazy">` : portraitSVG(i+20,brand.color);
     const label = k ? k.n : "KOL";
-    return `<div class="kol-card" tabindex="0" role="button" style="--fc:${brand.color}" data-kb="${brand.id}" data-ki="${i}" aria-label="${label}">${media}
+    return `<div class="kol-card talent-card" tabindex="0" role="button" style="--fc:${brand.color}" data-kb="${brand.id}" data-ki="${i}" aria-label="${label}">${media}
+      <span class="card-tech" aria-hidden="true"></span><span class="card-scan" aria-hidden="true"></span>
+      <span class="card-open" aria-hidden="true">↗</span>
       <div class="k-name">${label}</div>
     </div>`;
   }).join("");
-  grid.querySelectorAll(".kol-card").forEach(c=>bindTilt(c,7));
+  grid.querySelectorAll(".kol-card").forEach(c=>bindTilt(c,5));
   if(!keep) document.getElementById("brandRoster").scrollIntoView({behavior:reduced?"auto":"smooth"});
 }
 function closeRoster(){
@@ -482,15 +485,23 @@ const SOC = {
   x:{n:"X", c:"#000000", s:'<svg viewBox="0 0 24 24"><path d="M17.7 3H21l-7.3 8.3L22.2 21h-6.7l-5.2-6.2L4.4 21H1l7.8-8.9L1.5 3h6.9l4.7 5.7L17.7 3zm-1.2 16h1.9L7.1 4.9H5.1L16.5 19z"/></svg>'}
 };
 const kModal = document.getElementById("kModal");
+const kmCard = kModal.querySelector(".km-card");
 let kmState = null;
-function openK(brandId, idx){
+let kmOriginCard = null;
+let kmCloseTimer = null;
+let kmReturnMotion = null;
+function openK(brandId, idx, sourceCard){
+  const opening = kModal.hidden;
+  clearTimeout(kmCloseTimer);
   kmState = {b: brandId, i: idx};
   const b = brandById(brandId);
   const real = KOL_DATA[brandId];
   const k = real && real[idx] ? real[idx] : null;
   const label = k ? k.n : "KOL " + pad2(idx+1);
+  kmCard.style.setProperty("--kc",b.color);
   document.getElementById("kmMedia").innerHTML =
-    k && k.img ? `<img src="${k.img}" alt="${label}">` : portraitSVG("m"+idx, b.color);
+    (k && k.img ? `<img src="${k.img}" alt="${label}">` : portraitSVG("m"+idx, b.color))+
+    '<span class="km-media-tech" aria-hidden="true"></span>';
   document.getElementById("kmTeam").textContent = "【" + (currentLang==="zh" ? b.zh : b.en) + "】";
   document.getElementById("kmName").textContent = label;
   document.getElementById("kmTags").innerHTML =
@@ -513,20 +524,71 @@ function openK(brandId, idx){
   const link = document.getElementById("kmLink");
   const chan = k ? (k.link || (k.links && (k.links.tw || k.links.yt)) || null) : null;
   if (chan){ link.href = chan; link.hidden = false; } else link.hidden = true;
-  kModal.hidden = false;
-  document.body.classList.add("km-lock");
+  if(opening){
+    kModal.classList.remove("open","from-card","closing-to-card");
+    kModal.hidden = false;
+    document.body.classList.add("km-lock");
+    kmOriginCard = sourceCard && sourceCard.isConnected ? sourceCard : null;
+    if(kmOriginCard && Element.prototype.animate && !reduced){
+      kModal.classList.add("preparing");
+      const from = kmOriginCard.getBoundingClientRect();
+      const to = kmCard.getBoundingClientRect();
+      kmCard.style.setProperty("--km-from-x",(from.left+from.width/2-to.left-to.width/2)+"px");
+      kmCard.style.setProperty("--km-from-y",(from.top+from.height/2-to.top-to.height/2)+"px");
+      kmCard.style.setProperty("--km-from-sx",Math.max(.08,from.width/to.width));
+      kmCard.style.setProperty("--km-from-sy",Math.max(.08,from.height/to.height));
+      kModal.classList.remove("preparing");
+      kModal.classList.add("from-card");
+    }
+  }
   requestAnimationFrame(()=>kModal.classList.add("open"));
 }
-function closeK(){
-  kModal.classList.remove("open");
+function finishKClose(){
+  clearTimeout(kmCloseTimer);
+  if(kmReturnMotion){
+    const motion = kmReturnMotion;
+    kmReturnMotion = null;
+    motion.onfinish = null;
+    motion.oncancel = null;
+    motion.cancel();
+  }
+  kModal.classList.remove("open","from-card","preparing","closing-to-card");
+  kModal.hidden = true;
   document.body.classList.remove("km-lock");
-  setTimeout(()=>{ kModal.hidden = true; }, 300);
+}
+function closeK(){
+  if(kModal.hidden) return;
+  const candidate = kmOriginCard && kmOriginCard.isConnected ? kmOriginCard : null;
+  const candidateRect = candidate ? candidate.getBoundingClientRect() : null;
+  const origin = candidateRect && candidateRect.right > 0 && candidateRect.left < innerWidth &&
+    candidateRect.bottom > 0 && candidateRect.top < innerHeight ? candidate : null;
+  kmOriginCard = null;
+  if(origin && Element.prototype.animate && !reduced){
+    const from = kmCard.getBoundingClientRect();
+    const to = origin.getBoundingClientRect();
+    const dx = to.left+to.width/2-from.left-from.width/2;
+    const dy = to.top+to.height/2-from.top-from.height/2;
+    kModal.classList.add("closing-to-card");
+    kmReturnMotion = kmCard.animate([
+      {opacity:1,transform:"translate3d(0,0,0) scale(1)",filter:"blur(0)"},
+      {opacity:.72,transform:`translate3d(${dx*.55}px,${dy*.55}px,0) scale(${Math.max(.3,to.width/from.width*1.55)},${Math.max(.3,to.height/from.height*1.25)})`,filter:"blur(.2px)",offset:.58},
+      {opacity:0,transform:`translate3d(${dx}px,${dy}px,0) scale(${to.width/from.width},${to.height/from.height})`,filter:"blur(1px)"}
+    ],{duration:480,easing:"cubic-bezier(.5,0,.2,1)",fill:"forwards"});
+    kmReturnMotion.onfinish = finishKClose;
+    kmReturnMotion.oncancel = finishKClose;
+    kmCloseTimer = setTimeout(finishKClose,540);
+  }else{
+    kModal.classList.remove("open");
+    kmCloseTimer = setTimeout(finishKClose,340);
+  }
 }
 function kmStep(dir){
   if (!kmState) return;
   const n = FLOW_COUNTS[kmState.b] || 1;
-  const card = kModal.querySelector(".km-card");
+  const card = kmCard;
   const motionClass = dir > 0 ? "km-next" : "km-prev";
+  kmOriginCard = null;
+  kModal.classList.remove("from-card");
   card.classList.remove("km-next", "km-prev");
   openK(kmState.b, (kmState.i + dir + n) % n);
   if (!reduced){
@@ -537,7 +599,6 @@ function kmStep(dir){
 }
 
 /* 手機藝人詳細卡：保留上下捲動，只有明確的水平手勢才切換人物 */
-const kmCard = kModal.querySelector(".km-card");
 let kmTouch = null;
 if (kmCard){
   kmCard.addEventListener("touchstart", e => {
@@ -567,7 +628,7 @@ document.addEventListener("click", e => {
   if (nav){ kmStep(+nav.dataset.knav); return; }
   if (e.target.closest("[data-kclose]")) { closeK(); return; }
   const c = e.target.closest("[data-kb]");
-  if (c) openK(c.dataset.kb, +c.dataset.ki);
+  if (c) openK(c.dataset.kb, +c.dataset.ki, c);
 });
 document.addEventListener("keydown", e => {
   if (e.key === "Escape" && !kModal.hidden) closeK();
@@ -575,7 +636,7 @@ document.addEventListener("keydown", e => {
   if (!kModal.hidden && e.key === "ArrowRight") kmStep(1);
   if (e.key === "Enter"){
     const c = document.activeElement && document.activeElement.closest ? document.activeElement.closest("[data-kb]") : null;
-    if (c) openK(c.dataset.kb, +c.dataset.ki);
+    if (c) openK(c.dataset.kb, +c.dataset.ki, c);
   }
 });
 
@@ -642,9 +703,11 @@ function flowCardHTML(item, seed, clone){
   const b = item.brand;
   const media = item.img ? `<img src="${item.img}" alt="${item.name||"KOL"}" loading="lazy" decoding="async">` : portraitSVG(seed, b.color);
   const label = item.name ? item.name : "KOL "+pad2(item.num);
-  return `<figure class="flow-card" style="--fc:${b.color}" tabindex="0" role="button"${clone?' data-flow-clone="true"':''}
+  return `<figure class="flow-card talent-card" style="--fc:${b.color}" tabindex="0" role="button"${clone?' data-flow-clone="true"':''}
     data-kb="${b.id}" data-ki="${item.num-1}" aria-label="${label}">
     ${media}
+    <span class="card-tech" aria-hidden="true"></span><span class="card-scan" aria-hidden="true"></span>
+    <span class="card-open" aria-hidden="true">↗</span>
     <figcaption class="fc-tag">${label}｜${currentLang==="zh"?b.zh:b.en}</figcaption>
   </figure>`;
 }
@@ -762,6 +825,7 @@ function renderFlows(){
     }else{
       el.innerHTML = cards + cards;
     }
+    el.querySelectorAll(".flow-card").forEach(card=>bindTilt(card,4));
   });
 }
 const flowMobileQuery = matchMedia("(max-width:640px)");
