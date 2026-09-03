@@ -638,17 +638,115 @@ BRANDS.forEach(b=>{
 });
 function pad2(n){ return String(n).padStart(2,"0"); }
 function brandById(id){ return BRANDS.find(x => x.id === id); }
-function flowCardHTML(item, seed){
+function flowCardHTML(item, seed, clone){
   const b = item.brand;
   const media = item.img ? `<img src="${item.img}" alt="${item.name||"KOL"}" loading="lazy" decoding="async">` : portraitSVG(seed, b.color);
   const label = item.name ? item.name : "KOL "+pad2(item.num);
-  return `<figure class="flow-card" style="--fc:${b.color}" tabindex="0" role="button"
+  return `<figure class="flow-card" style="--fc:${b.color}" tabindex="0" role="button"${clone?' data-flow-clone="true"':''}
     data-kb="${b.id}" data-ki="${item.num-1}" aria-label="${label}">
     ${media}
     <figcaption class="fc-tag">${label}｜${currentLang==="zh"?b.zh:b.en}</figcaption>
   </figure>`;
 }
+
+let mobileFlowCleanup = null;
+function flowCardPosition(row, card){
+  const padding = parseFloat(getComputedStyle(row).paddingLeft) || 0;
+  return row.scrollLeft + card.getBoundingClientRect().left - row.getBoundingClientRect().left - padding;
+}
+function setupMobileFlow(row, track){
+  const cards = Array.from(track.children);
+  const realCount = cards.length - 2;
+  if(realCount < 1) return ()=>{};
+
+  let autoplayTimer = null;
+  let settleTimer = null;
+  let resumeTimer = null;
+  let jumping = false;
+  let touching = false;
+  let visible = true;
+
+  const nearestIndex = ()=>{
+    let best = 0;
+    let distance = Infinity;
+    cards.forEach((card,index)=>{
+      const delta = Math.abs(flowCardPosition(row,card) - row.scrollLeft);
+      if(delta < distance){ distance = delta; best = index; }
+    });
+    return best;
+  };
+  const jumpTo = index=>{
+    jumping = true;
+    row.scrollTo({left:flowCardPosition(row,cards[index]),behavior:"auto"});
+    requestAnimationFrame(()=>{ jumping = false; });
+  };
+  const normalize = ()=>{
+    if(jumping || touching) return;
+    const index = nearestIndex();
+    if(index === 0) jumpTo(realCount);
+    else if(index === realCount + 1) jumpTo(1);
+  };
+  const schedule = (delay=2800)=>{
+    clearTimeout(autoplayTimer);
+    if(reduced) return;
+    autoplayTimer = setTimeout(function advance(){
+      if(!touching && visible && document.visibilityState !== "hidden" && kModal.hidden){
+        normalize();
+        const index = nearestIndex();
+        row.scrollTo({left:flowCardPosition(row,cards[Math.min(index+1,realCount+1)]),behavior:"smooth"});
+      }
+      autoplayTimer = setTimeout(advance,2800);
+    },delay);
+  };
+  const onScroll = ()=>{
+    if(jumping) return;
+    clearTimeout(settleTimer);
+    settleTimer = setTimeout(normalize,150);
+  };
+  const onTouchStart = ()=>{
+    touching = true;
+    clearTimeout(autoplayTimer);
+    clearTimeout(resumeTimer);
+  };
+  const resume = ()=>{
+    touching = false;
+    clearTimeout(settleTimer);
+    settleTimer = setTimeout(normalize,180);
+    clearTimeout(resumeTimer);
+    resumeTimer = setTimeout(()=>schedule(1800),350);
+  };
+
+  row.addEventListener("scroll",onScroll,{passive:true});
+  row.addEventListener("touchstart",onTouchStart,{passive:true});
+  row.addEventListener("touchend",resume,{passive:true});
+  row.addEventListener("touchcancel",resume,{passive:true});
+
+  let observer = null;
+  if("IntersectionObserver" in window){
+    observer = new IntersectionObserver(entries=>{
+      visible = !!entries[0]?.isIntersecting;
+    },{threshold:.08});
+    observer.observe(row);
+  }
+
+  requestAnimationFrame(()=>{
+    jumpTo(1);
+    schedule(2300);
+  });
+
+  return ()=>{
+    clearTimeout(autoplayTimer);
+    clearTimeout(settleTimer);
+    clearTimeout(resumeTimer);
+    observer?.disconnect();
+    row.removeEventListener("scroll",onScroll);
+    row.removeEventListener("touchstart",onTouchStart);
+    row.removeEventListener("touchend",resume);
+    row.removeEventListener("touchcancel",resume);
+  };
+}
 function renderFlows(){
+  if(mobileFlowCleanup){ mobileFlowCleanup(); mobileFlowCleanup = null; }
   const rows = [
     ["flowA1", FLOW]
   ];
@@ -656,7 +754,14 @@ function renderFlows(){
     const el = document.getElementById(id);
     if(!el) return;
     const cards = list.map((it,i)=>flowCardHTML(it, id+i)).join("");
-    el.innerHTML = matchMedia("(max-width:640px)").matches ? cards : cards + cards;
+    if(matchMedia("(max-width:640px)").matches){
+      const first = flowCardHTML(list[0],id+"-first-clone",true);
+      const last = flowCardHTML(list[list.length-1],id+"-last-clone",true);
+      el.innerHTML = last + cards + first;
+      mobileFlowCleanup = setupMobileFlow(el.parentElement,el);
+    }else{
+      el.innerHTML = cards + cards;
+    }
   });
 }
 const flowMobileQuery = matchMedia("(max-width:640px)");
