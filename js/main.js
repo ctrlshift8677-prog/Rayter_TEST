@@ -12,13 +12,170 @@ const finePointer = window.matchMedia("(hover:hover) and (pointer:fine)").matche
 
 /* ================= Intro ================= */
 const intro = document.getElementById("intro");
-function endIntro(){
+const INTRO_SEEN_KEY = "rayter-tech-intro-v2";
+let introEndTimer = null;
+let introExitTimer = null;
+
+function endIntro(remember){
   if(intro.classList.contains("done")) return;
   intro.classList.add("done");
-  document.body.classList.remove("intro-lock");
+  document.body.classList.remove("intro-lock", "intro-exiting");
+  if(remember !== false){
+    try{ sessionStorage.setItem(INTRO_SEEN_KEY, "1"); }catch(e){}
+  }
+  clearTimeout(introEndTimer);
+  clearTimeout(introExitTimer);
+  document.querySelector(".intro-logo-flight")?.remove();
+  setTimeout(()=>intro.remove(), 120);
 }
-if(reduced){ endIntro(); }
-else{ setTimeout(endIntro, 1900); intro.addEventListener("click", endIntro); }
+
+function flyLogoToHeader(){
+  const source = intro.querySelector(".intro-logo-host, .intro-static-logo");
+  const target = document.querySelector(".brand img");
+  if(!source || !target || !Element.prototype.animate) return;
+
+  const from = source.getBoundingClientRect();
+  const to = target.getBoundingClientRect();
+  if(!from.width || !to.width) return;
+
+  const flight = source.cloneNode(true);
+  flight.classList.add("intro-logo-flight");
+  flight.removeAttribute("aria-hidden");
+  Object.assign(flight.style, {
+    position:"fixed", left:from.left+"px", top:from.top+"px",
+    width:from.width+"px", height:from.height+"px", margin:"0",
+    zIndex:"240", pointerEvents:"none", transformOrigin:"center center"
+  });
+  document.body.appendChild(flight);
+  source.style.opacity = "0";
+
+  const dx = to.left + to.width/2 - (from.left + from.width/2);
+  const dy = to.top + to.height/2 - (from.top + from.height/2);
+  const scale = Math.max(.08, to.width/from.width);
+  flight.animate([
+    {opacity:1,transform:"translate3d(0,0,0) scale(1) skewX(0)",filter:"blur(0) drop-shadow(0 12px 22px rgba(42,113,148,.12))"},
+    {opacity:1,transform:`translate3d(${dx*.18}px,${dy*.18-8}px,0) scale(.86) skewX(-4deg)`,filter:"blur(0) drop-shadow(18px 8px 16px rgba(42,113,148,.16))",offset:.34},
+    {opacity:.92,transform:`translate3d(${dx*.72}px,${dy*.72}px,0) scale(${Math.max(scale*1.7,.34)}) skewX(-2deg)`,filter:"blur(.45px) drop-shadow(10px 5px 10px rgba(42,113,148,.12))",offset:.76},
+    {opacity:.04,transform:`translate3d(${dx}px,${dy}px,0) scale(${scale}) skewX(0)`,filter:"blur(0) drop-shadow(0 0 0 transparent)"}
+  ],{duration:860,easing:"cubic-bezier(.16,1,.3,1)",fill:"forwards"});
+}
+
+function startIntroExit(remember, skipped){
+  if(intro.classList.contains("is-exiting") || intro.classList.contains("done")) return;
+  clearTimeout(introEndTimer);
+  if(skipped && intro.getAnimations){
+    intro.getAnimations({subtree:true}).forEach(animation=>{
+      try{ animation.finish(); }catch(e){}
+    });
+  }
+  if(remember !== false){
+    try{ sessionStorage.setItem(INTRO_SEEN_KEY, "1"); }catch(e){}
+  }
+  flyLogoToHeader();
+  document.body.classList.add("intro-exiting");
+  intro.classList.add("is-exiting");
+  intro.setAttribute("aria-hidden", "true");
+  introExitTimer = setTimeout(()=>endIntro(false), 1040);
+}
+
+function buildTechIntro(){
+  const logoMarkup = window.RAYTER_LOGO_SVG;
+  if(!logoMarkup){
+    intro.innerHTML = '<img class="intro-static-logo" src="assets/rayter-logo.svg" alt="雷特娛樂 Rayter Entertainment">';
+    introEndTimer = setTimeout(()=>startIntroExit(true, false), 1700);
+    return;
+  }
+
+  intro.setAttribute("aria-label", "雷特娛樂開場動畫，點擊可略過");
+  intro.innerHTML = `
+    <div class="intro-tech-grid" aria-hidden="true"></div>
+    <div class="intro-exit-band intro-exit-band-blue" aria-hidden="true"><span>RAYTER / ENTER</span></div>
+    <div class="intro-exit-band intro-exit-band-yellow" aria-hidden="true"></div>
+    <div class="intro-orbit intro-orbit-a" aria-hidden="true"></div>
+    <div class="intro-orbit intro-orbit-b" aria-hidden="true"></div>
+    <div class="intro-kinetic-wash" aria-hidden="true"></div>
+    <div class="intro-speed-field" aria-hidden="true">${"<i></i>".repeat(10)}</div>
+    <div class="intro-edge intro-edge-a" aria-hidden="true"></div>
+    <div class="intro-edge intro-edge-b" aria-hidden="true"></div>
+    <div class="intro-stage">
+      <span class="intro-corner intro-corner-tl" aria-hidden="true"></span>
+      <span class="intro-corner intro-corner-tr" aria-hidden="true"></span>
+      <span class="intro-corner intro-corner-bl" aria-hidden="true"></span>
+      <span class="intro-corner intro-corner-br" aria-hidden="true"></span>
+      <div class="intro-velocity intro-velocity-a" aria-hidden="true"></div>
+      <div class="intro-velocity intro-velocity-b" aria-hidden="true"></div>
+      <div class="intro-scan" aria-hidden="true"></div>
+      <div class="intro-impact" aria-hidden="true"></div>
+      <div class="intro-logo-echo intro-logo-echo-left" aria-hidden="true">${logoMarkup}</div>
+      <div class="intro-logo-echo intro-logo-echo-right" aria-hidden="true">${logoMarkup}</div>
+      <div class="intro-logo-host">${logoMarkup}</div>
+    </div>
+    <div class="intro-progress" aria-hidden="true"><i></i></div>
+    <button class="intro-skip" type="button" aria-label="略過開場動畫">SKIP</button>`;
+
+  intro.classList.add("tech-intro", "is-running");
+  const svg = intro.querySelector(".intro-logo-host svg");
+  if(!svg || !Element.prototype.animate){
+    intro.classList.add("intro-static");
+    introEndTimer = setTimeout(()=>startIntroExit(true, false), 1800);
+    return;
+  }
+
+  intro.querySelectorAll("svg").forEach(el=>el.classList.add("intro-logo-svg"));
+  const titlePaths = [], yellowPaths = [], subtitlePaths = [];
+  svg.querySelectorAll("path").forEach(path=>{
+    path.style.transformBox = "fill-box";
+    path.style.transformOrigin = "center";
+    path.style.willChange = "transform, opacity, filter";
+    const fill = path.getAttribute("fill") || "";
+    const box = path.getBBox();
+    if(fill.includes("91.372681")) yellowPaths.push(path);
+    else if(box.y >= 162) subtitlePaths.push(path);
+    else titlePaths.push(path);
+  });
+
+  const byX = (a,b)=>a.getBBox().x-b.getBBox().x;
+  titlePaths.sort(byX); yellowPaths.sort(byX); subtitlePaths.sort(byX);
+  const yOffsets = [-9,7,-5,10,-7,6];
+  const rotations = [-2.8,1.8,-1.4,2.2,-1.8,1.2];
+
+  titlePaths.forEach((path,index)=>{
+    const box = path.getBBox();
+    const direction = box.x + box.width/2 < 142 ? -1 : 1;
+    const x = direction * (138 + index%3*32);
+    path.animate([
+      {opacity:0,transform:`translate(${x}px,${yOffsets[index%yOffsets.length]}px) skewX(${direction*-15}deg) rotate(${rotations[index%rotations.length]}deg) scaleX(1.22)`,filter:"blur(13px) brightness(1.35)"},
+      {opacity:.72,transform:`translate(${direction*9}px,0) skewX(${direction*-3}deg) rotate(0) scaleX(1.03)`,filter:"blur(1.5px) brightness(1.08)",offset:.78},
+      {opacity:1,transform:"translate(0,0) skewX(0) rotate(0) scaleX(1)",filter:"blur(0) brightness(1)"}
+    ],{duration:450,delay:220+index*42,easing:"cubic-bezier(.08,.82,.2,1)",fill:"both"});
+  });
+
+  yellowPaths.forEach((path,index)=>{
+    const fromX = index===2 ? 82 : index===0 ? -74 : 58;
+    path.animate([
+      {opacity:0,transform:`translate(${fromX}px,-8px) skewX(-16deg) rotate(${index%2?12:-12}deg) scale(.2)`,filter:"blur(7px) brightness(2.6) drop-shadow(0 0 10px rgba(218,212,32,.55))"},
+      {opacity:1,transform:"translate(0,0) rotate(0) scale(1.08)",filter:"blur(0) brightness(1.55) drop-shadow(0 0 8px rgba(218,212,32,.5))",offset:.76},
+      {opacity:1,transform:"translate(0,0) rotate(0) scale(1)",filter:"blur(0) brightness(1)"}
+    ],{duration:360,delay:760+index*92,easing:"cubic-bezier(.08,1.24,.2,1)",fill:"both"});
+  });
+
+  subtitlePaths.forEach((path,index)=>{
+    path.animate([
+      {opacity:0,transform:"translate(-34px,2px) skewX(-19deg) scaleX(1.1)",filter:"blur(5px)"},
+      {opacity:1,transform:"translate(0,0) skewX(0) scaleX(1)",filter:"blur(0)"}
+    ],{duration:280,delay:1040+index*21,easing:"cubic-bezier(.08,.82,.2,1)",fill:"both"});
+  });
+
+  introEndTimer = setTimeout(()=>startIntroExit(true, false), 2280);
+}
+
+let introSeen = false;
+try{ introSeen = sessionStorage.getItem(INTRO_SEEN_KEY) === "1"; }catch(e){}
+if(reduced || introSeen) endIntro(false);
+else{
+  buildTechIntro();
+  intro.addEventListener("click", ()=>startIntroExit(true, true));
+}
 
 /* ================= Cursor ================= */
 const cDot=document.getElementById("cDot"), cRing=document.getElementById("cRing");
@@ -214,6 +371,7 @@ slides.forEach((_,i)=>{
 function paint(){
   slides.forEach((s,i)=>s.classList.toggle("active", i===slideIdx));
   [...dotsWrap.children].forEach((d,i)=>d.setAttribute("aria-current", i===slideIdx ? "true":"false"));
+  dotsWrap.style.setProperty("--slide-progress", ((slideIdx+1)/slides.length*100)+"%");
 }
 function go(i, user){
   slideIdx = (i+slides.length)%slides.length;
@@ -230,14 +388,21 @@ carouselEl.addEventListener("keydown",e=>{
   if(e.key==="ArrowLeft") go(slideIdx-1,true);
   if(e.key==="ArrowRight") go(slideIdx+1,true);
 });
-let touchX=null;
-carouselEl.addEventListener("touchstart",e=>{touchX=e.touches[0].clientX},{passive:true});
-carouselEl.addEventListener("touchend",e=>{
-  if(touchX===null) return;
-  const dx = e.changedTouches[0].clientX - touchX;
-  if(Math.abs(dx)>48) go(slideIdx+(dx<0?1:-1),true);
-  touchX=null;
+let heroTouch=null;
+carouselEl.addEventListener("touchstart",e=>{
+  if(e.touches.length!==1) return;
+  clearInterval(timer);
+  heroTouch={x:e.touches[0].clientX,y:e.touches[0].clientY};
 },{passive:true});
+carouselEl.addEventListener("touchend",e=>{
+  if(!heroTouch || e.changedTouches.length!==1){heroTouch=null;restart();return;}
+  const dx = e.changedTouches[0].clientX - heroTouch.x;
+  const dy = e.changedTouches[0].clientY - heroTouch.y;
+  if(Math.abs(dx)>48 && Math.abs(dx)>Math.abs(dy)*1.2) go(slideIdx+(dx<0?1:-1),true);
+  else restart();
+  heroTouch=null;
+},{passive:true});
+carouselEl.addEventListener("touchcancel",()=>{heroTouch=null;restart();},{passive:true});
 paint(); restart();
 
 /* ================= Brand wall & rosters ================= */
@@ -360,7 +525,42 @@ function closeK(){
 function kmStep(dir){
   if (!kmState) return;
   const n = FLOW_COUNTS[kmState.b] || 1;
+  const card = kModal.querySelector(".km-card");
+  const motionClass = dir > 0 ? "km-next" : "km-prev";
+  card.classList.remove("km-next", "km-prev");
   openK(kmState.b, (kmState.i + dir + n) % n);
+  if (!reduced){
+    void card.offsetWidth;
+    card.classList.add(motionClass);
+    setTimeout(()=>card.classList.remove(motionClass), 360);
+  }
+}
+
+/* 手機藝人詳細卡：保留上下捲動，只有明確的水平手勢才切換人物 */
+const kmCard = kModal.querySelector(".km-card");
+let kmTouch = null;
+if (kmCard){
+  kmCard.addEventListener("touchstart", e => {
+    if (!matchMedia("(max-width:640px)").matches || e.touches.length !== 1) return;
+    if (e.target.closest("a,button")) return;
+    const t = e.touches[0];
+    kmTouch = {x:t.clientX, y:t.clientY, at:performance.now()};
+  }, {passive:true});
+  kmCard.addEventListener("touchend", e => {
+    if (!kmTouch || e.changedTouches.length !== 1){ kmTouch = null; return; }
+    const t = e.changedTouches[0];
+    const dx = t.clientX - kmTouch.x;
+    const dy = t.clientY - kmTouch.y;
+    const elapsed = performance.now() - kmTouch.at;
+    const horizontal = Math.abs(dx) > Math.abs(dy) * 1.25;
+    const deliberate = Math.abs(dx) > 52 || (Math.abs(dx) > 34 && elapsed < 280);
+    if (horizontal && deliberate){
+      kModal.classList.add("swipe-used");
+      kmStep(dx < 0 ? 1 : -1);
+    }
+    kmTouch = null;
+  }, {passive:true});
+  kmCard.addEventListener("touchcancel", ()=>{ kmTouch = null; }, {passive:true});
 }
 document.addEventListener("click", e => {
   const nav = e.target.closest("[data-knav]");
@@ -440,7 +640,7 @@ function pad2(n){ return String(n).padStart(2,"0"); }
 function brandById(id){ return BRANDS.find(x => x.id === id); }
 function flowCardHTML(item, seed){
   const b = item.brand;
-  const media = item.img ? `<img src="${item.img}" alt="${item.name||"KOL"}" loading="lazy">` : portraitSVG(seed, b.color);
+  const media = item.img ? `<img src="${item.img}" alt="${item.name||"KOL"}" loading="lazy" decoding="async">` : portraitSVG(seed, b.color);
   const label = item.name ? item.name : "KOL "+pad2(item.num);
   return `<figure class="flow-card" style="--fc:${b.color}" tabindex="0" role="button"
     data-kb="${b.id}" data-ki="${item.num-1}" aria-label="${label}">
@@ -456,9 +656,11 @@ function renderFlows(){
     const el = document.getElementById(id);
     if(!el) return;
     const cards = list.map((it,i)=>flowCardHTML(it, id+i)).join("");
-    el.innerHTML = cards + cards; /* 兩份內容做無縫循環 */
+    el.innerHTML = matchMedia("(max-width:640px)").matches ? cards : cards + cards;
   });
 }
+const flowMobileQuery = matchMedia("(max-width:640px)");
+if(flowMobileQuery.addEventListener) flowMobileQuery.addEventListener("change", renderFlows);
 
 /* ================= Init ================= */
 renderFlows();
