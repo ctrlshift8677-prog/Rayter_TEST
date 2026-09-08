@@ -1,7 +1,7 @@
 /* ============================================================
    雷特娛樂官網 main.js — 邏輯檔(依檔內順序)
    開場 Intro → 游標 → 語言切換 applyLang → 捲動進度/回頂/藍色底圖 aboutCurtain
-   → Reveal 進場 → 磁吸手風琴 mstrip → 首屏輪播 → 廠牌牆/名單 openRoster
+   → Reveal 進場 → 案例大圖/縮圖瀏覽器 → 首屏輪播 → 廠牌牆/名單 openRoster
    → KOL 資訊卡 openK(SOC 社群 icon 定義)→ 人像流 FLOW_COUNTS+renderFlows
    → 表單 → 行動選單 → Init
    ============================================================ */
@@ -236,6 +236,23 @@ SECTIONS.forEach(id=>spy.observe(document.getElementById(id)));
 /* ================= Scroll progress ================= */
 const sprog = document.getElementById("sprog");
 const toTop = document.getElementById("toTop");
+const sectionWords = [...document.querySelectorAll(".sec-word")];
+function sectionWordParallax(){
+  if (reduced){
+    sectionWords.forEach(word=>word.style.removeProperty("--word-shift"));
+    return;
+  }
+  const vh = innerHeight;
+  sectionWords.forEach(word=>{
+    const section = word.closest("section");
+    if (!section) return;
+    const rect = section.getBoundingClientRect();
+    if (rect.bottom < -vh || rect.top > vh*2) return;
+    const progress = (vh-rect.top)/(vh+rect.height);
+    const shift = Math.max(-18,Math.min(18,(progress-.5)*36));
+    word.style.setProperty("--word-shift",shift.toFixed(2)+"px");
+  });
+}
 toTop.addEventListener("click", () => scrollTo({top:0, behavior: reduced ? "auto" : "smooth"}));
 let spTick = false;
 addEventListener("scroll", () => {
@@ -246,6 +263,7 @@ addEventListener("scroll", () => {
     sprog.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + "%";
     toTop.classList.toggle("show", h.scrollTop > 600);
     aboutCurtain();
+    sectionWordParallax();
     spTick = false;
   });
 }, {passive:true});
@@ -262,12 +280,19 @@ function aboutCurtain(){
   aboutSec.classList.toggle("bg-in", p > 0.6);
 }
 aboutCurtain();
+sectionWordParallax();
+addEventListener("resize",sectionWordParallax,{passive:true});
 
 /* ================= Reveals ================= */
-const io = new IntersectionObserver(es=>es.forEach(e=>{
+const io = "IntersectionObserver" in window ? new IntersectionObserver(es=>es.forEach(e=>{
   if(e.isIntersecting){e.target.classList.add("in");io.unobserve(e.target);}
-}),{threshold:.1});
-function watchReveals(root){(root||document).querySelectorAll("[data-rev]:not(.in)").forEach(el=>io.observe(el));}
+}),{threshold:.1}) : null;
+function watchReveals(root){
+  (root||document).querySelectorAll("[data-rev]:not(.in)").forEach(el=>{
+    if (io) io.observe(el);
+    else el.classList.add("in");
+  });
+}
 
 /* ================= tilt / magnetic ================= */
 function bindTilt(el, max){
@@ -320,71 +345,285 @@ function portraitSVG(seed, accent){
   </svg>`;
 }
 
-/* ================= 磁吸手風琴(合作案例) ================= */
-const mstrip = document.getElementById("mstrip");
-const mbars = Array.from(mstrip.querySelectorAll(".mbar"));
-let mOpen = null;
-const mDesk = () => matchMedia("(min-width:821px)").matches;
-function mClearFlex(){ mbars.forEach(b => b.style.flexGrow = ""); }
-function mSet(){
-  mbars.forEach((b,i)=>{
-    b.classList.toggle("open", mOpen === i);
-    b.classList.toggle("dim", mOpen !== null && mOpen !== i);
-    b.setAttribute("aria-expanded", mOpen === i);
-  });
+/* ================= 合作案例：大圖＋縮圖 ================= */
+const caseBrowsers = [...document.querySelectorAll("[data-case-browser]")];
+const HERO_CASE_ROTATE_MS = 3300;
+const CASE_ROTATE_MS = 4800;
+let heroHovered = false;
+let heroFocusPaused = false;
+let heroTouchPaused = false;
+function heroIsPaused(){
+  return heroHovered || heroFocusPaused || heroTouchPaused || document.hidden;
 }
-mbars.forEach((b,i)=>{
-  b.addEventListener("click", ()=>{
-    mOpen = (mOpen === i) ? null : i;
-    if (mOpen !== null) mClearFlex();
-    mSet();
+function stopCaseBrowser(browser){
+  clearInterval(browser._caseTimer);
+  browser._caseTimer = null;
+}
+function startCaseBrowser(browser){
+  stopCaseBrowser(browser);
+  const panel = browser.closest("[data-case-panel]");
+  const accordion = browser.closest(".mbar");
+  const heroSlide = browser.closest(".slide");
+  const isHero = browser.classList.contains("hero-case-banner");
+  if (
+    reduced ||
+    (panel && panel.hidden) ||
+    (accordion && !accordion.classList.contains("open")) ||
+    (isHero && (!heroSlide?.classList.contains("active") || heroIsPaused()))
+  ) return;
+  browser._caseTimer = setInterval(()=>{
+    const thumbs = [...browser.querySelectorAll(".case-thumb")];
+    const current = Number(browser.dataset.caseIndex || 0);
+    selectCase(browser, (current + 1) % thumbs.length, false);
+  }, isHero ? HERO_CASE_ROTATE_MS : CASE_ROTATE_MS);
+}
+function selectCase(browser, index, user){
+  const thumbs = [...browser.querySelectorAll(".case-thumb")];
+  const thumb = thumbs[index];
+  if (!thumb) return;
+  const image = browser.querySelector("[data-case-main]");
+  const mobileSource = browser.querySelector("[data-case-main-mobile]");
+  browser.dataset.caseIndex = String(index);
+  image.src = thumb.dataset.src;
+  image.alt = thumb.dataset.alt || "合作案例";
+  if (mobileSource) mobileSource.srcset = thumb.dataset.mobileSrc || thumb.dataset.src;
+  thumbs.forEach((item,i)=>{
+    const active = i === index;
+    item.classList.toggle("active", active);
+    item.setAttribute("aria-selected", active ? "true" : "false");
+    item.tabIndex = active ? 0 : -1;
   });
-});
-if (finePointer && !reduced){
-  mstrip.addEventListener("mousemove", e => {
-    if (mOpen !== null || !mDesk()) return;
-    mbars.forEach(b => {
-      const r = b.getBoundingClientRect();
-      const d = Math.abs(e.clientX - (r.left + r.width/2));
-      const f = Math.max(0, 1 - d / 280);
-      b.style.flexGrow = (1 + f * 1.2).toFixed(3);
+  const counter = browser.querySelector("[data-case-current]");
+  if (counter) counter.textContent = String(index + 1).padStart(2,"0");
+  browser.classList.remove("switching");
+  void browser.offsetWidth;
+  browser.classList.add("switching");
+  setTimeout(()=>browser.classList.remove("switching"),380);
+  if (user) startCaseBrowser(browser);
+}
+caseBrowsers.forEach(browser=>{
+  const thumbs = [...browser.querySelectorAll(".case-thumb")];
+  browser.dataset.caseIndex = "0";
+  thumbs.forEach((thumb,index)=>{
+    thumb.tabIndex = index === 0 ? 0 : -1;
+    thumb.addEventListener("click",()=>selectCase(browser,index,true));
+    thumb.addEventListener("keydown",e=>{
+      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+      e.preventDefault();
+      const next = (index + (e.key === "ArrowRight" ? 1 : -1) + thumbs.length) % thumbs.length;
+      selectCase(browser,next,true);
+      thumbs[next].focus();
     });
   });
-  mstrip.addEventListener("mouseleave", mClearFlex);
-}
-document.addEventListener("keydown", e => {
-  if (e.key === "Escape" && mOpen !== null){ mOpen = null; mClearFlex(); mSet(); }
+  browser.addEventListener("mouseenter",()=>stopCaseBrowser(browser));
+  browser.addEventListener("mouseleave",()=>startCaseBrowser(browser));
+  browser.addEventListener("focusin",()=>stopCaseBrowser(browser));
+  browser.addEventListener("focusout",e=>{if(!browser.contains(e.relatedTarget)) startCaseBrowser(browser);});
+  startCaseBrowser(browser);
 });
-document.querySelectorAll("[data-goto]").forEach(b=>
-  b.addEventListener("click",()=>document.getElementById(b.dataset.goto)
-    .scrollIntoView({behavior:reduced?"auto":"smooth"})));
 
+/* ================= 手風琴(合作案例)：桌機滑入預覽、點擊固定 ================= */
+const mstrip = document.getElementById("mstrip");
+const mbars = mstrip ? [...mstrip.querySelectorAll(".mbar")] : [];
+let mPinned = null;
+let mHover = null;
+let mHoverTimer = null;
+let mMobileAnchorFrame = null;
+const mDesk = () => matchMedia("(min-width:821px)").matches;
+function stopMobileMAnchor(){
+  cancelAnimationFrame(mMobileAnchorFrame);
+  mMobileAnchorFrame = null;
+}
+function anchorMobileMbar(bar){
+  stopMobileMAnchor();
+  if (!bar || mDesk()) return;
+  const started = performance.now();
+  const duration = reduced ? 0 : 520;
+  const hold = now=>{
+    if (mDesk() || !bar.classList.contains("open")){
+      stopMobileMAnchor();
+      return;
+    }
+    const headerHeight = document.querySelector(".site-header")?.getBoundingClientRect().height || 68;
+    const delta = bar.getBoundingClientRect().top - headerHeight - 10;
+    if (Math.abs(delta) > .5) scrollBy(0,delta);
+    if (now-started < duration) mMobileAnchorFrame = requestAnimationFrame(hold);
+    else mMobileAnchorFrame = null;
+  };
+  mMobileAnchorFrame = requestAnimationFrame(hold);
+}
+function scheduleMHover(next,delay){
+  clearTimeout(mHoverTimer);
+  mHoverTimer = setTimeout(()=>{
+    if (mPinned !== null) return;
+    mHover = next;
+    mSet();
+  },delay);
+}
+function mSet(){
+  const active = mPinned ?? mHover;
+  mbars.forEach((bar,index)=>{
+    const open = active === index;
+    bar.classList.toggle("open",open);
+    bar.classList.toggle("pinned",mPinned === index);
+    bar.classList.toggle("dim",active !== null && !open);
+    const head = bar.querySelector(".mb-head");
+    if (head) head.setAttribute("aria-expanded",open ? "true" : "false");
+    const body = bar.querySelector(".mb-body");
+    if (body){
+      body.inert = !open;
+      body.setAttribute("aria-hidden",open ? "false" : "true");
+      body.querySelectorAll("button,a,input,select,textarea,[tabindex]").forEach(control=>{
+        if (open){
+          if (!Object.prototype.hasOwnProperty.call(control.dataset,"mPrevTabindex")) return;
+          const previous = control.dataset.mPrevTabindex;
+          if (previous === "") control.removeAttribute("tabindex");
+          else control.setAttribute("tabindex",previous);
+          delete control.dataset.mPrevTabindex;
+        }else if (!Object.prototype.hasOwnProperty.call(control.dataset,"mPrevTabindex")){
+          control.dataset.mPrevTabindex = control.getAttribute("tabindex") || "";
+          control.setAttribute("tabindex","-1");
+        }
+      });
+    }
+    const browser = bar.querySelector("[data-case-browser]");
+    if (browser) open ? startCaseBrowser(browser) : stopCaseBrowser(browser);
+  });
+}
+mbars.forEach((bar,index)=>{
+  const head = bar.querySelector(".mb-head");
+  if (!head) return;
+  bar.addEventListener("mouseenter",()=>{
+    if (!finePointer || reduced || !mDesk() || mPinned !== null) return;
+    scheduleMHover(index,85);
+  });
+  bar.addEventListener("mouseleave",()=>{
+    if (!finePointer || reduced || !mDesk() || mPinned !== null) return;
+    scheduleMHover(null,145);
+  });
+  head.addEventListener("click",()=>{
+    clearTimeout(mHoverTimer);
+    const opening = mPinned !== index;
+    if (!opening){
+      mPinned = null;
+      mHover = null;
+    }else{
+      mPinned = index;
+      mHover = null;
+    }
+    mSet();
+    if (opening) anchorMobileMbar(bar);
+    else stopMobileMAnchor();
+  });
+});
+if (mstrip){
+  mstrip.addEventListener("mouseleave",()=>{
+    if (mPinned !== null) return;
+    scheduleMHover(null,145);
+  });
+}
+document.addEventListener("keydown",event=>{
+  if (event.key === "Escape" && (mPinned !== null || mHover !== null)){
+    clearTimeout(mHoverTimer);
+    mPinned = null;
+    mHover = null;
+    mSet();
+  }
+});
+mSet();
 /* ================= Carousel ================= */
 const slides = [...document.querySelectorAll(".slide")];
 const dotsWrap = document.getElementById("dots");
-let slideIdx = 0, timer = null;
-slides.forEach((_,i)=>{
+const carouselEl = document.getElementById("carousel");
+let slideIdx = 0, timer = null, heroTransitionTimer = null;
+const HERO_SLIDE_MS = 6500;
+slides.forEach((slide,i)=>{
+  slide.id = "hero-slide-"+(i+1);
   const d = document.createElement("button");
   d.setAttribute("aria-label","第 "+(i+1)+" 張");
   d.addEventListener("click",()=>go(i,true));
   dotsWrap.appendChild(d);
 });
-function paint(){
-  slides.forEach((s,i)=>s.classList.toggle("active", i===slideIdx));
-  [...dotsWrap.children].forEach((d,i)=>d.setAttribute("aria-current", i===slideIdx ? "true":"false"));
+function resetHeroDepth(){
+  const properties = ["--hero-bg-x","--hero-bg-y","--hero-image-x","--hero-image-y","--hero-kicker-x","--hero-kicker-y","--hero-title-x","--hero-title-y","--hero-meta-x","--hero-meta-y"];
+  slides.forEach(slide=>properties.forEach(name=>slide.style.removeProperty(name)));
+}
+function clearHeroTransition(){
+  clearTimeout(heroTransitionTimer);
+  heroTransitionTimer = null;
+  slides.forEach(slide=>slide.classList.remove("leaving","enter-next","enter-prev"));
+  carouselEl.classList.remove("transition-next","transition-prev");
+}
+function getHeroDirection(from,to){
+  const forward = (to-from+slides.length)%slides.length;
+  if (!forward) return null;
+  return forward <= slides.length/2 ? "next" : "prev";
+}
+function paint(direction,previousIndex){
+  clearHeroTransition();
+  resetHeroDepth();
+  slides.forEach((s,i)=>{
+    const active = i === slideIdx;
+    s.classList.toggle("active",active);
+    s.setAttribute("aria-hidden",active ? "false" : "true");
+    const browser = s.querySelector(".hero-case-banner[data-case-browser]");
+    if (browser) active ? startCaseBrowser(browser) : stopCaseBrowser(browser);
+  });
+  if (!reduced && direction && previousIndex !== null && previousIndex !== slideIdx){
+    slides[previousIndex].classList.add("leaving");
+    slides[slideIdx].classList.add("enter-"+direction);
+    carouselEl.classList.add("transition-"+direction);
+    heroTransitionTimer = setTimeout(clearHeroTransition,780);
+  }
+  [...dotsWrap.children].forEach((d,i)=>{
+    const active = i === slideIdx;
+    d.setAttribute("aria-current",active ? "true":"false");
+    d.setAttribute("aria-pressed",active ? "true":"false");
+  });
   dotsWrap.style.setProperty("--slide-progress", ((slideIdx+1)/slides.length*100)+"%");
 }
 function go(i, user){
-  slideIdx = (i+slides.length)%slides.length;
-  paint();
+  const previousIndex = slideIdx;
+  const nextIndex = (i+slides.length)%slides.length;
+  const direction = getHeroDirection(previousIndex,nextIndex);
+  slideIdx = nextIndex;
+  paint(direction,previousIndex);
   if(user) restart();
 }
-function restart(){clearInterval(timer);if(!reduced) timer=setInterval(()=>go(slideIdx+1),6000);}
+function syncHeroPlayback(){
+  clearInterval(timer);
+  slides.forEach(slide=>{
+    const browser = slide.querySelector(".hero-case-banner[data-case-browser]");
+    if (browser) stopCaseBrowser(browser);
+  });
+  const paused = reduced || heroIsPaused();
+  carouselEl.classList.toggle("is-paused",paused);
+  if (paused) return;
+  const browser = slides[slideIdx]?.querySelector(".hero-case-banner[data-case-browser]");
+  if (browser) startCaseBrowser(browser);
+  timer = setInterval(()=>go(slideIdx+1),HERO_SLIDE_MS);
+}
+function restart(){ syncHeroPlayback(); }
 document.getElementById("prevSlide").addEventListener("click",()=>go(slideIdx-1,true));
 document.getElementById("nextSlide").addEventListener("click",()=>go(slideIdx+1,true));
-const carouselEl = document.getElementById("carousel");
-carouselEl.addEventListener("mouseenter",()=>clearInterval(timer));
-carouselEl.addEventListener("mouseleave",restart);
+carouselEl.addEventListener("mouseenter",()=>{
+  heroHovered = true;
+  syncHeroPlayback();
+});
+carouselEl.addEventListener("mouseleave",()=>{
+  heroHovered = false;
+  resetHeroDepth();
+  syncHeroPlayback();
+});
+carouselEl.addEventListener("focusin",()=>{
+  heroFocusPaused = true;
+  syncHeroPlayback();
+});
+carouselEl.addEventListener("focusout",event=>{
+  if (carouselEl.contains(event.relatedTarget)) return;
+  heroFocusPaused = false;
+  syncHeroPlayback();
+});
 carouselEl.addEventListener("keydown",e=>{
   if(e.key==="ArrowLeft") go(slideIdx-1,true);
   if(e.key==="ArrowRight") go(slideIdx+1,true);
@@ -392,18 +631,67 @@ carouselEl.addEventListener("keydown",e=>{
 let heroTouch=null;
 carouselEl.addEventListener("touchstart",e=>{
   if(e.touches.length!==1) return;
-  clearInterval(timer);
+  heroTouchPaused = true;
+  syncHeroPlayback();
   heroTouch={x:e.touches[0].clientX,y:e.touches[0].clientY};
 },{passive:true});
 carouselEl.addEventListener("touchend",e=>{
-  if(!heroTouch || e.changedTouches.length!==1){heroTouch=null;restart();return;}
+  if(!heroTouch || e.changedTouches.length!==1){
+    heroTouch=null;
+    heroTouchPaused=false;
+    syncHeroPlayback();
+    return;
+  }
   const dx = e.changedTouches[0].clientX - heroTouch.x;
   const dy = e.changedTouches[0].clientY - heroTouch.y;
   if(Math.abs(dx)>48 && Math.abs(dx)>Math.abs(dy)*1.2) go(slideIdx+(dx<0?1:-1),true);
-  else restart();
   heroTouch=null;
+  heroTouchPaused=false;
+  syncHeroPlayback();
 },{passive:true});
-carouselEl.addEventListener("touchcancel",()=>{heroTouch=null;restart();},{passive:true});
+carouselEl.addEventListener("touchcancel",()=>{
+  heroTouch=null;
+  heroTouchPaused=false;
+  syncHeroPlayback();
+},{passive:true});
+
+if (finePointer && !reduced){
+  let depthFrame = null;
+  let depthRect = null;
+  let depthX = 0;
+  let depthY = 0;
+  carouselEl.addEventListener("pointerenter",()=>{ depthRect = carouselEl.getBoundingClientRect(); });
+  carouselEl.addEventListener("pointermove",event=>{
+    depthRect ||= carouselEl.getBoundingClientRect();
+    depthX = Math.max(-1,Math.min(1,(event.clientX-depthRect.left)/depthRect.width*2-1));
+    depthY = Math.max(-1,Math.min(1,(event.clientY-depthRect.top)/depthRect.height*2-1));
+    if (depthFrame !== null) return;
+    depthFrame = requestAnimationFrame(()=>{
+      depthFrame = null;
+      const slide = slides[slideIdx];
+      slide.style.setProperty("--hero-bg-x",(-depthX*4).toFixed(2)+"px");
+      slide.style.setProperty("--hero-bg-y",(-depthY*3).toFixed(2)+"px");
+      slide.style.setProperty("--hero-image-x",(depthX*7).toFixed(2)+"px");
+      slide.style.setProperty("--hero-image-y",(depthY*5).toFixed(2)+"px");
+      slide.style.setProperty("--hero-kicker-x",(depthX*6).toFixed(2)+"px");
+      slide.style.setProperty("--hero-kicker-y",(depthY*4).toFixed(2)+"px");
+      slide.style.setProperty("--hero-title-x",(depthX*11).toFixed(2)+"px");
+      slide.style.setProperty("--hero-title-y",(depthY*7).toFixed(2)+"px");
+      slide.style.setProperty("--hero-meta-x",(-depthX*5).toFixed(2)+"px");
+      slide.style.setProperty("--hero-meta-y",(-depthY*3).toFixed(2)+"px");
+    });
+  });
+  addEventListener("resize",()=>{ depthRect=null; },{passive:true});
+}
+document.addEventListener("visibilitychange",()=>{
+  if (document.hidden){
+    resetHeroDepth();
+    caseBrowsers.forEach(stopCaseBrowser);
+  }else{
+    mSet();
+  }
+  syncHeroPlayback();
+});
 paint(); restart();
 
 /* ================= Brand wall & rosters ================= */
@@ -418,13 +706,15 @@ function renderBrands(){
         ${b.logoC?`<img class="lc" src="${b.logoC}" alt="" aria-hidden="true">`:""}
       </span>`;
     } else {
+      const primary = currentLang==="en" && b.en ? b.en : b.zh;
+      const secondary = b.en ? (currentLang==="zh" ? b.en : b.zh) : "";
       inner = `<span class="brand-word">
-        <span class="w-zh">${currentLang==="zh"?b.zh:b.en}</span>
-        <span class="w-en">${currentLang==="zh"?b.en:b.zh}</span>
+        <span class="w-zh">${primary}</span>
+        ${secondary ? `<span class="w-en">${secondary}</span>` : ""}
       </span>`;
     }
-    return `<button class="brand-tile" style="--tile:${b.color}" data-brand="${b.id}" aria-label="${b.zh} ${b.en}">
-      ${inner}<span class="brand-name">${b.en}</span>
+    return `<button class="brand-tile" style="--tile:${b.color}" data-brand="${b.id}" aria-label="${[b.zh,b.en].filter(Boolean).join(" ")}">
+      ${inner}${b.en ? `<span class="brand-name">${b.en}</span>` : ""}
     </button>`;
   }).join("");
   g.querySelectorAll("[data-brand]").forEach(t=>{
@@ -441,17 +731,13 @@ function openRoster(brand, keep){
   const logo = brand.logoC || brand.logoB;
   document.getElementById("rhLogo").innerHTML = logo
     ? `<img src="${logo}" class="${brand.lightLogo ? "logo-inv" : ""}" alt="${brand.zh}">`
-    : `<span class="rh-word">${brand.en}</span>`;
-  document.getElementById("rhEn").textContent = brand.en;
+    : `<span class="rh-word">${brand.en || brand.zh}</span>`;
+  const rhEn = document.getElementById("rhEn");
+  rhEn.textContent = brand.en;
+  rhEn.hidden = !brand.en;
   document.getElementById("rhZh").textContent = brand.zh;
   const n = FLOW_COUNTS[brand.id] || 0;
   document.getElementById("rhCount").innerHTML = `<b>${n}</b> CREATORS`;
-  const mail = document.getElementById("rhMail");
-  if (brand.email){
-    mail.href = "mailto:" + brand.email;
-    mail.querySelector("span").textContent = brand.email;
-    mail.hidden = false;
-  } else mail.hidden = true;
   const grid = document.getElementById("rosterGrid");
   const real = KOL_DATA[brand.id];
   grid.innerHTML = Array.from({length:n},(_,i)=>{
@@ -502,7 +788,7 @@ function openK(brandId, idx, sourceCard){
   document.getElementById("kmMedia").innerHTML =
     (k && k.img ? `<img src="${k.img}" alt="${label}">` : portraitSVG("m"+idx, b.color))+
     '<span class="km-media-tech" aria-hidden="true"></span>';
-  document.getElementById("kmTeam").textContent = "【" + (currentLang==="zh" ? b.zh : b.en) + "】";
+  document.getElementById("kmTeam").textContent = "【" + (currentLang==="en" && b.en ? b.en : b.zh) + "】";
   document.getElementById("kmName").textContent = label;
   document.getElementById("kmTags").innerHTML =
     k && k.tags ? k.tags.map(t => `<span>${t}</span>`).join("") : "";
@@ -681,13 +967,13 @@ form.addEventListener("submit",e=>{
     (currentLang==="zh"?"信箱:":"Email: ")+email,
     "", body
   ];
-  window.location.href = "mailto:rayterz78@gmail.com?subject="+subject+"&body="+encodeURIComponent(lines.join("\n"));
+  window.location.href = "mailto:team@rayterent.com?subject="+subject+"&body="+encodeURIComponent(lines.join("\n"));
   msg.className = "form-msg ok";
   msg.textContent = currentLang==="zh" ? "已開啟郵件程式" : "Mail app opened";
 });
 
 /* ================= Creator flow ================= */
-const FLOW_COUNTS = {xd:13, pinkie:10, south:8, green:6, aster:3, zmn:2}; /* 共 42 */
+const FLOW_COUNTS = {xd:13, pinkie:11, south:8, green:6, aster:3, zmn:2}; /* 共 43 */
 const FLOW = [];
 BRANDS.forEach(b=>{
   const real = KOL_DATA[b.id];
@@ -708,7 +994,7 @@ function flowCardHTML(item, seed, clone){
     ${media}
     <span class="card-tech" aria-hidden="true"></span><span class="card-scan" aria-hidden="true"></span>
     <span class="card-open" aria-hidden="true">↗</span>
-    <figcaption class="fc-tag">${label}｜${currentLang==="zh"?b.zh:b.en}</figcaption>
+    <figcaption class="fc-tag">${label}｜${currentLang==="en" && b.en ? b.en : b.zh}</figcaption>
   </figure>`;
 }
 
