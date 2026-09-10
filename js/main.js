@@ -6,7 +6,16 @@
    → 表單 → 行動選單 → Init
    ============================================================ */
 
-let currentLang = "zh";
+const LANGUAGE_STORAGE_KEY = "rayter-site-language";
+let currentLang = (()=>{
+  const requested = new URLSearchParams(location.search).get("lang");
+  if(requested === "en" || requested === "zh") return requested;
+  try{
+    const saved = localStorage.getItem(LANGUAGE_STORAGE_KEY);
+    if(saved === "en" || saved === "zh") return saved;
+  }catch(e){}
+  return "zh";
+})();
 const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const finePointer = window.matchMedia("(hover:hover) and (pointer:fine)").matches;
 
@@ -81,12 +90,12 @@ function startIntroExit(remember, skipped){
 function buildTechIntro(){
   const logoMarkup = window.RAYTER_LOGO_SVG;
   if(!logoMarkup){
-    intro.innerHTML = '<img class="intro-static-logo" src="assets/rayter-logo.svg" alt="雷特娛樂 Rayter Entertainment">';
+    intro.innerHTML = `<img class="intro-static-logo" src="assets/rayter-logo.svg" alt="${currentLang === "en" ? "Rayter Digital Entertainment" : "雷特娛樂 Rayter Entertainment"}">`;
     introEndTimer = setTimeout(()=>startIntroExit(true, false), 1700);
     return;
   }
 
-  intro.setAttribute("aria-label", "雷特娛樂開場動畫，點擊可略過");
+  intro.setAttribute("aria-label", currentLang === "en" ? "Rayter Entertainment intro animation; click to skip" : "雷特娛樂開場動畫，點擊可略過");
   intro.innerHTML = `
     <div class="intro-tech-grid" aria-hidden="true"></div>
     <div class="intro-exit-band intro-exit-band-blue" aria-hidden="true"><span>RAYTER / ENTER</span></div>
@@ -111,7 +120,7 @@ function buildTechIntro(){
       <div class="intro-logo-host">${logoMarkup}</div>
     </div>
     <div class="intro-progress" aria-hidden="true"><i></i></div>
-    <button class="intro-skip" type="button" aria-label="略過開場動畫">SKIP</button>`;
+    <button class="intro-skip" type="button" aria-label="${currentLang === "en" ? "Skip intro animation" : "略過開場動畫"}">SKIP</button>`;
 
   intro.classList.add("tech-intro", "is-running");
   const svg = intro.querySelector(".intro-logo-host svg");
@@ -192,19 +201,178 @@ if(finePointer && !reduced){
 }else{cDot.remove();cRing.remove();}
 
 /* ================= i18n ================= */
-function applyLang(lang){
-  currentLang = lang;
-  document.documentElement.lang = lang === "zh" ? "zh-Hant" : "en";
+const CASE_ALT_EN = {
+  "assets/media/cases/pc-1.webp":"PC game livestream arena campaign",
+  "assets/media/cases/pc-2.webp":"VALORANT ranked challenge campaign",
+  "assets/media/cases/pc-3.webp":"PUBG Hot Drop mode creator campaign",
+  "assets/media/cases/pc-4.webp":"MapleStory creator campaign",
+  "assets/media/cases/mobile-1.webp":"Capybara Go creator campaign",
+  "assets/media/cases/mobile-2.webp":"Mobile game creator campaign 2",
+  "assets/media/cases/mobile-3.webp":"Mobile game creator campaign 3",
+  "assets/media/cases/mobile-4.webp":"Mobile RPG creator campaign",
+  "assets/media/cases/console-1.webp":"Nioh 3 creator campaign",
+  "assets/media/cases/console-2.webp":"Black Myth: Wukong creator campaign",
+  "assets/media/cases/console-3.webp":"FANTASY LIFE i Nintendo Switch 2 Edition creator campaign",
+  "assets/media/cases/console-4.webp":"Inazuma Eleven: Victory Road creator campaign",
+  "assets/media/cases/offline-1.webp":"Offline event activation",
+  "assets/media/cases/offline-2.webp":"Creator meet-and-greet activation"
+};
+function brandName(brand){
+  return currentLang === "en" ? (brand.en || "Talent Partner") : brand.zh;
+}
+function kolName(kol){
+  return currentLang === "en" ? (kol.nEn || "Creator") : kol.n;
+}
+function kolIntro(kol){
+  return currentLang === "en" ? (kol.introEn || "") : (kol.intro || "");
+}
+function kolTags(kol){
+  return currentLang === "en" ? (kol.tagsEn || []) : (kol.tags || []);
+}
+function setLocalizedAttribute(selector,attribute,zh,en){
+  document.querySelectorAll(selector).forEach(el=>el.setAttribute(attribute,currentLang === "en" ? en : zh));
+}
+function updateCaseLanguage(){
+  document.querySelectorAll(".case-thumb[data-src]").forEach(thumb=>{
+    if(!thumb.dataset.altZh) thumb.dataset.altZh = thumb.dataset.alt || "合作案例";
+    const alt = currentLang === "en"
+      ? (CASE_ALT_EN[thumb.dataset.src] || "Case study")
+      : thumb.dataset.altZh;
+    thumb.dataset.alt = alt;
+    thumb.setAttribute("aria-label",alt);
+  });
+  document.querySelectorAll("[data-case-browser]").forEach(browser=>{
+    const active = browser.querySelector(".case-thumb.active") || browser.querySelector(".case-thumb");
+    const image = browser.querySelector("[data-case-main]");
+    if(active && image) image.alt = active.dataset.alt || (currentLang === "en" ? "Case study" : "合作案例");
+  });
+  document.querySelectorAll(".case-thumbs").forEach(tablist=>{
+    const title = tablist.closest(".mbar")?.querySelector(".mb-title")?.textContent.trim() || "";
+    tablist.setAttribute("aria-label",title + (currentLang === "en" ? " case studies" : " 案例"));
+  });
+}
+function updateInterfaceLanguage(){
+  document.title = currentLang === "en"
+    ? "Rayter Digital Entertainment | Gaming & Creator Partnerships"
+    : "雷特娛樂 Rayter Entertainment";
+  const description = document.querySelector('meta[name="description"]');
+  if(description) description.content = currentLang === "en"
+    ? "Rayter Digital Entertainment connects brands with gaming creators through talent matching, content production, integrated campaigns and live activations."
+    : "雷特數位娛樂深耕遊戲、直播與 KOL 行銷領域,專注於商業合作、遊戲行銷企劃、內容整合與專案執行。";
+  setLocalizedAttribute(".site-header .brand","aria-label","雷特娛樂，回到頁首","Rayter Entertainment, back to top");
+  setLocalizedAttribute(".site-header .brand img, .footer-brand img","alt","雷特娛樂 Rayter Entertainment","Rayter Digital Entertainment");
+  setLocalizedAttribute(".main-nav","aria-label","主選單","Main navigation");
+  setLocalizedAttribute(".m-menu nav","aria-label","行動選單","Mobile navigation");
+  setLocalizedAttribute(".lang-seg","aria-label","語言切換","Language selector");
+  const menuButton = document.getElementById("menuBtn");
+  if(menuButton){
+    const menuOpen = menuButton.getAttribute("aria-expanded") === "true";
+    menuButton.setAttribute("aria-label",currentLang === "en"
+      ? (menuOpen ? "Close menu" : "Open menu")
+      : (menuOpen ? "關閉選單" : "開啟選單"));
+  }
+  setLocalizedAttribute("#carousel","aria-label","輪播 Banner","Featured work carousel");
+  setLocalizedAttribute("#prevSlide","aria-label","上一張","Previous slide");
+  setLocalizedAttribute("#nextSlide","aria-label","下一張","Next slide");
+  setLocalizedAttribute("#dots","aria-label","輪播頁籤","Carousel navigation");
+  setLocalizedAttribute("#captchaCode","aria-label","驗證碼","Captcha code");
+  setLocalizedAttribute("#captchaRefresh","aria-label","更換驗證碼","Generate a new captcha");
+  setLocalizedAttribute("#captchaRefresh","title","更換驗證碼","Generate a new captcha");
+  setLocalizedAttribute("#toTop","aria-label","回到頂端","Back to top");
+  setLocalizedAttribute(".footer-brand","aria-label","回到頂端","Back to top");
+  setLocalizedAttribute(".km-card","aria-label","KOL 資訊","Creator profile");
+  setLocalizedAttribute(".km-close","aria-label","關閉","Close");
+  setLocalizedAttribute('.km-nav[data-knav="-1"]',"aria-label","上一位","Previous creator");
+  setLocalizedAttribute('.km-nav[data-knav="1"]',"aria-label","下一位","Next creator");
+  setLocalizedAttribute(".hero .slide:first-child img","alt","雷特娛樂 KOL 陣容","Rayter creator network");
+  setLocalizedAttribute(".production-videos","aria-label","內容製作影片案例","Content production video showcases");
+  updateProductionLanguage();
+  document.querySelectorAll(".lang-seg .ls").forEach(b=>b.setAttribute("aria-pressed",b.dataset.lang===currentLang ? "true" : "false"));
+  document.querySelectorAll("#dots button").forEach((dot,index)=>{
+    dot.setAttribute("aria-label",currentLang === "en"
+      ? `Slide ${index+1} of ${slides.length}`
+      : `第 ${index+1} 張，共 ${slides.length} 張`);
+  });
+  updateCaseLanguage();
+  const formMessage = document.getElementById("formMsg");
+  if(formMessage?.dataset.messageKey) setFormMessage(formMessage.dataset.messageKey);
+}
+
+/* ================= Content production playlists ================= */
+const productionFrames = [...document.querySelectorAll("[data-production-frame]")];
+const localFilePreview = location.protocol === "file:";
+function productionTitle(frame){
+  return frame.dataset[currentLang === "en" ? "titleEn" : "titleZh"] || "YouTube playlist";
+}
+function updateProductionLanguage(){
+  productionFrames.forEach(frame=>{
+    const title = productionTitle(frame);
+    const launch = frame.querySelector(".production-launch");
+    const player = frame.querySelector("iframe");
+    if(launch){
+      launch.setAttribute("aria-label",currentLang === "en"
+        ? `${localFilePreview ? "Open" : "Play"} ${title}`
+        : `${localFilePreview ? "開啟" : "播放"}${title}`);
+    }
+    if(player) player.title = title;
+  });
+}
+function launchProductionPlaylist(frame){
+  const playlistUrl = frame.dataset.playlistUrl;
+  if(localFilePreview){
+    window.open(playlistUrl,"_blank","noopener");
+    return;
+  }
+  const playlist = frame.dataset.playlist;
+  if(!playlist || frame.classList.contains("is-playing")) return;
+  const params = new URLSearchParams({
+    listType:"playlist", list:playlist, playsinline:"1", rel:"0", autoplay:"1"
+  });
+  if(location.origin && location.origin !== "null") params.set("origin",location.origin);
+  const player = document.createElement("iframe");
+  player.src = `https://www.youtube.com/embed?${params.toString()}`;
+  player.title = productionTitle(frame);
+  player.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
+  player.referrerPolicy = "strict-origin-when-cross-origin";
+  player.allowFullscreen = true;
+  frame.classList.add("is-playing");
+  frame.replaceChildren(player);
+}
+function setupProductionPlayers(){
+  document.documentElement.classList.toggle("local-file-preview",localFilePreview);
+  productionFrames.forEach(frame=>{
+    frame.querySelector(".production-launch")?.addEventListener("click",()=>launchProductionPlaylist(frame));
+  });
+  updateProductionLanguage();
+}
+function applyLang(lang,persist){
+  currentLang = lang === "en" ? "en" : "zh";
+  document.documentElement.lang = currentLang === "zh" ? "zh-Hant" : "en";
   document.querySelectorAll("[data-zh]").forEach(el=>{
-    const t = el.getAttribute("data-"+lang);
+    const t = el.getAttribute("data-"+currentLang);
     if(t !== null && !el.querySelector("a")) el.textContent = t;
   });
-  document.querySelectorAll(".lang-seg .ls").forEach(function(b){ b.classList.toggle("on", b.dataset.lang===lang); });
+  document.querySelectorAll(".lang-seg .ls").forEach(function(b){ b.classList.toggle("on", b.dataset.lang===currentLang); });
+  updateInterfaceLanguage();
   renderBrands();
   renderFlows();
   if(!document.getElementById("brandRoster").hidden && activeBrand) openRoster(activeBrand, true);
+  if(kmState && !kModal.hidden){
+    const selector = `[data-kb="${kmState.b}"][data-ki="${kmState.i}"]`;
+    const roster = document.getElementById("brandRoster");
+    kmOriginCard = (!roster.hidden ? roster.querySelector(selector) : null) || document.querySelector(selector);
+    openK(kmState.b,kmState.i,kmOriginCard);
+  }
+  if(persist){
+    try{ localStorage.setItem(LANGUAGE_STORAGE_KEY,currentLang); }catch(e){}
+    try{
+      const url = new URL(location.href);
+      url.searchParams.set("lang",currentLang);
+      history.replaceState(null,"",url.pathname+url.search+url.hash);
+    }catch(e){}
+  }
 }
-document.querySelectorAll(".lang-seg .ls").forEach(b=>b.addEventListener("click",()=>applyLang(b.dataset.lang)));
+document.querySelectorAll(".lang-seg .ls").forEach(b=>b.addEventListener("click",()=>applyLang(b.dataset.lang,true)));
 
 /* ================= One-page nav + scroll spy ================= */
 const SECTIONS = ["about","service","artist","contact"];
@@ -212,7 +380,7 @@ const desktopStage = document.getElementById("desktopStage");
 const stageSectionNo = desktopStage?.querySelector("[data-stage-no]");
 const stageSectionName = desktopStage?.querySelector("[data-stage-name]");
 const STAGE_SECTIONS = {
-  about:["01","ABOUT"],service:["02","SERVICE"],artist:["03","ARTIST"],contact:["04","CONTACT"]
+  about:["01","ABOUT"],service:["02","SERVICES"],artist:["03","CREATORS"],contact:["04","CONTACT"]
 };
 function setDesktopStageSection(id){
   if(!desktopStage || !STAGE_SECTIONS[id]) return;
@@ -222,17 +390,30 @@ function setDesktopStageSection(id){
 }
 const menuBtn = document.getElementById("menuBtn");
 const mMenu = document.getElementById("mMenu");
-function closeMenu(){ mMenu.classList.remove("open"); menuBtn.setAttribute("aria-expanded","false"); }
+function updateMenuButtonLabel(){
+  const open = menuBtn.getAttribute("aria-expanded") === "true";
+  menuBtn.setAttribute("aria-label",currentLang === "en"
+    ? (open ? "Close menu" : "Open menu")
+    : (open ? "關閉選單" : "開啟選單"));
+}
+function closeMenu(){
+  mMenu.classList.remove("open");
+  menuBtn.setAttribute("aria-expanded","false");
+  updateMenuButtonLabel();
+}
 menuBtn.addEventListener("click",()=>{
   const open = mMenu.classList.toggle("open");
   menuBtn.setAttribute("aria-expanded", open ? "true" : "false");
+  updateMenuButtonLabel();
 });
 document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeMenu(); });
 document.querySelectorAll(".nav-btn[data-target]").forEach(b=>{
   b.addEventListener("click",()=>{
     closeMenu();
     document.getElementById(b.dataset.target).scrollIntoView({behavior:reduced?"auto":"smooth"});
-    history.replaceState(null,"","#"+b.dataset.target);
+    const url = new URL(location.href);
+    url.hash = b.dataset.target;
+    history.replaceState(null,"",url.pathname+url.search+url.hash);
   });
 });
 const spy = new IntersectionObserver(entries=>{
@@ -358,7 +539,7 @@ document.querySelectorAll(".magnetic").forEach(bindMagnetic);
 function portraitSVG(seed, accent){
   const acc = accent || "#4197C5";
   return `
-  <svg viewBox="0 0 150 205" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="照片">
+  <svg viewBox="0 0 150 205" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${currentLang === "en" ? "Portrait placeholder" : "照片"}">
     <defs>
       <linearGradient id="g${seed}" x1="0" y1="0" x2="0.9" y2="1">
         <stop offset="0" stop-color="#EEF3F6"/><stop offset="1" stop-color="#DFE7EC"/>
@@ -421,7 +602,7 @@ function selectCase(browser, index, user){
   const mobileSource = browser.querySelector("[data-case-main-mobile]");
   browser.dataset.caseIndex = String(index);
   image.src = thumb.dataset.src;
-  image.alt = thumb.dataset.alt || "合作案例";
+  image.alt = thumb.dataset.alt || (currentLang === "en" ? "Case study" : "合作案例");
   if (mobileSource) mobileSource.srcset = thumb.dataset.mobileSrc || thumb.dataset.src;
   thumbs.forEach((item,i)=>{
     const active = i === index;
@@ -576,7 +757,7 @@ const HERO_SLIDE_MS = 6500;
 slides.forEach((slide,i)=>{
   slide.id = "hero-slide-"+(i+1);
   const d = document.createElement("button");
-  d.setAttribute("aria-label","第 "+(i+1)+" 張");
+  d.setAttribute("aria-label",currentLang === "en" ? `Slide ${i+1} of ${slides.length}` : `第 ${i+1} 張，共 ${slides.length} 張`);
   d.addEventListener("click",()=>go(i,true));
   dotsWrap.appendChild(d);
 });
@@ -735,22 +916,23 @@ let activeBrand = null;
 function renderBrands(){
   const g = document.getElementById("brandGrid");
   g.innerHTML = BRANDS.map(b=>{
+    const localizedName = brandName(b);
     let inner;
     if(b.logoB){
       inner = `<span class="brand-logo">
-        <img class="lb${b.logoC?"":" only"}" src="${b.logoB}" alt="${b.zh}">
+        <img class="lb${b.logoC?"":" only"}" src="${b.logoB}" alt="${localizedName}">
         ${b.logoC?`<img class="lc" src="${b.logoC}" alt="" aria-hidden="true">`:""}
       </span>`;
     } else {
-      const primary = currentLang==="en" && b.en ? b.en : b.zh;
-      const secondary = b.en ? (currentLang==="zh" ? b.en : b.zh) : "";
+      const primary = localizedName;
+      const secondary = currentLang === "zh" && b.en ? b.en : "";
       inner = `<span class="brand-word">
         <span class="w-zh">${primary}</span>
         ${secondary ? `<span class="w-en">${secondary}</span>` : ""}
       </span>`;
     }
-    return `<button class="brand-tile" style="--tile:${b.color}" data-brand="${b.id}" aria-label="${[b.zh,b.en].filter(Boolean).join(" ")}">
-      ${inner}${b.en ? `<span class="brand-name">${b.en}</span>` : ""}
+    return `<button class="brand-tile" style="--tile:${b.color}" data-brand="${b.id}" aria-label="${localizedName}">
+      ${inner}${b.logoB && b.en ? `<span class="brand-name">${b.en}</span>` : ""}
     </button>`;
   }).join("");
   g.querySelectorAll("[data-brand]").forEach(t=>{
@@ -765,21 +947,22 @@ function openRoster(brand, keep){
   const hero = document.getElementById("rosterHero");
   hero.style.setProperty("--bc", brand.color);
   const logo = brand.logoC || brand.logoB;
+  const localizedBrandName = brandName(brand);
   document.getElementById("rhLogo").innerHTML = logo
-    ? `<img src="${logo}" class="${brand.lightLogo ? "logo-inv" : ""}" alt="${brand.zh}">`
-    : `<span class="rh-word">${brand.en || brand.zh}</span>`;
+    ? `<img src="${logo}" class="${brand.lightLogo ? "logo-inv" : ""}" alt="${localizedBrandName}">`
+    : `<span class="rh-word">${localizedBrandName}</span>`;
   const rhEn = document.getElementById("rhEn");
-  rhEn.textContent = brand.en;
-  rhEn.hidden = !brand.en;
-  document.getElementById("rhZh").textContent = brand.zh;
+  rhEn.textContent = currentLang === "en" ? "CREATOR NETWORK" : brand.en;
+  rhEn.hidden = currentLang === "zh" && !brand.en;
+  document.getElementById("rhZh").textContent = localizedBrandName;
   const n = FLOW_COUNTS[brand.id] || 0;
   document.getElementById("rhCount").innerHTML = `<b>${n}</b> CREATORS`;
   const grid = document.getElementById("rosterGrid");
   const real = KOL_DATA[brand.id];
   grid.innerHTML = Array.from({length:n},(_,i)=>{
     const k = real && real[i] ? real[i] : null;
-    const media = k && k.img ? `<img src="${k.img}" alt="${k.n}" loading="lazy">` : portraitSVG(i+20,brand.color);
-    const label = k ? k.n : "KOL";
+    const label = k ? kolName(k) : (currentLang === "en" ? "Creator" : "KOL");
+    const media = k && k.img ? `<img src="${k.img}" alt="${label}" loading="lazy">` : portraitSVG(i+20,brand.color);
     return `<div class="kol-card talent-card" tabindex="0" role="button" style="--fc:${brand.color}" data-kb="${brand.id}" data-ki="${i}" aria-label="${label}">${media}
       <span class="card-tech" aria-hidden="true"></span><span class="card-scan" aria-hidden="true"></span>
       <span class="card-open" aria-hidden="true">↗</span>
@@ -819,18 +1002,20 @@ function openK(brandId, idx, sourceCard){
   const b = brandById(brandId);
   const real = KOL_DATA[brandId];
   const k = real && real[idx] ? real[idx] : null;
-  const label = k ? k.n : "KOL " + pad2(idx+1);
+  const label = k ? kolName(k) : (currentLang === "en" ? "Creator " : "KOL ") + pad2(idx+1);
   kmCard.style.setProperty("--kc",b.color);
   document.getElementById("kmMedia").innerHTML =
     (k && k.img ? `<img src="${k.img}" alt="${label}">` : portraitSVG("m"+idx, b.color))+
     '<span class="km-media-tech" aria-hidden="true"></span>';
-  document.getElementById("kmTeam").textContent = "【" + (currentLang==="en" && b.en ? b.en : b.zh) + "】";
+  document.getElementById("kmTeam").textContent = currentLang === "en" ? brandName(b) : "【" + brandName(b) + "】";
   document.getElementById("kmName").textContent = label;
+  const tags = k ? kolTags(k) : [];
   document.getElementById("kmTags").innerHTML =
-    k && k.tags ? k.tags.map(t => `<span>${t}</span>`).join("") : "";
+    tags.map(t => `<span>${t}</span>`).join("");
   const intro = document.getElementById("kmIntro");
-  intro.textContent = k && k.intro ? k.intro : "";
-  intro.hidden = !(k && k.intro);
+  const localizedIntro = k ? kolIntro(k) : "";
+  intro.textContent = localizedIntro;
+  intro.hidden = !localizedIntro;
   const soc = document.getElementById("kmSoc");
   let socHtml = "";
   if (k && k.links){
@@ -839,7 +1024,7 @@ function openK(brandId, idx, sourceCard){
       const url = k.links[p];
       return url
         ? `<a class="soc" href="${url}" target="_blank" rel="noopener" aria-label="${m.n}" style="--sc:${m.c}">${m.s}</a>`
-        : `<span class="soc off" title="${m.n}(連結籌備中)">${m.s}</span>`;
+        : `<span class="soc off" title="${m.n}${currentLang === "en" ? " link coming soon" : "（連結籌備中）"}">${m.s}</span>`;
     }).join("");
   }
   soc.innerHTML = socHtml; soc.hidden = !socHtml;
@@ -972,10 +1157,37 @@ newCaptcha();
 document.getElementById("captchaRefresh").addEventListener("click",newCaptcha);
 const form = document.getElementById("contactForm");
 const msg = document.getElementById("formMsg");
-form.addEventListener("reset",()=>{msg.className="form-msg";newCaptcha();
+const submitButton = document.getElementById("submitInquiry");
+const resetButton = form.querySelector('[type="reset"]');
+/* 測試完成後只需更換這一行的收件信箱。 */
+const CONTACT_RECIPIENT = "bella182399@gmail.com";
+const FORM_ENDPOINT = `https://formsubmit.co/ajax/${CONTACT_RECIPIENT}`;
+form.action = `https://formsubmit.co/${CONTACT_RECIPIENT}`;
+const FORM_MESSAGES = {
+  incorrectCode:{zh:"驗證碼不正確",en:"Incorrect verification code."},
+  required:{zh:"請填寫必填欄位",en:"Please complete all required fields."},
+  sending:{zh:"正在安全送出您的洽詢…",en:"Sending your inquiry…"},
+  sent:{zh:"已成功送出，我們會盡快與您聯繫。",en:"Your inquiry has been sent. We’ll be in touch soon."},
+  sendFailed:{zh:"目前無法送出，請稍後再試，或直接寄信至 team@rayterent.com。",en:"We couldn’t send your inquiry. Please try again later or email team@rayterent.com."}
+};
+function setFormMessage(key){
+  const copy = FORM_MESSAGES[key];
+  if(!copy) return;
+  msg.dataset.messageKey = key;
+  msg.textContent = copy[currentLang];
+}
+function setFormBusy(busy){
+  form.setAttribute("aria-busy",busy ? "true" : "false");
+  submitButton.disabled = busy;
+  resetButton.disabled = busy;
+  submitButton.querySelector(".submit-default").hidden = busy;
+  submitButton.querySelector(".submit-busy").hidden = !busy;
+}
+form.addEventListener("reset",()=>{msg.className="form-msg";delete msg.dataset.messageKey;msg.textContent="";newCaptcha();
   form.querySelectorAll(".err").forEach(x=>x.classList.remove("err"));});
-form.addEventListener("submit",e=>{
+form.addEventListener("submit",async e=>{
   e.preventDefault();
+  if(submitButton.disabled) return;
   form.querySelectorAll(".err").forEach(x=>x.classList.remove("err"));
   const name = form.fName.value.trim();
   const email = form.fEmail.value.trim();
@@ -989,23 +1201,40 @@ form.addEventListener("submit",e=>{
   if(bad.length){
     bad.forEach(x=>x.classList.add("err"));
     msg.className = "form-msg bad";
-    msg.textContent = currentLang==="zh"
-      ? (cap !== codeEl.textContent && bad.length===1 ? "驗證碼不正確" : "請填寫必填欄位")
-      : (cap !== codeEl.textContent && bad.length===1 ? "Captcha doesn't match" : "Fill in the required fields");
+    setFormMessage(cap !== codeEl.textContent && bad.length===1 ? "incorrectCode" : "required");
     bad[0].focus();
     return;
   }
-  const subject = encodeURIComponent(currentLang==="zh" ? "【合作洽詢】"+name : "[Inquiry] "+name);
-  const lines = [
-    (currentLang==="zh"?"客戶名稱:":"Name: ")+name,
-    (currentLang==="zh"?"聯絡電話:":"Phone: ")+(form.fTel.value.trim()||"—"),
-    (currentLang==="zh"?"手機:":"Mobile: ")+(form.fMobile.value.trim()||"—"),
-    (currentLang==="zh"?"信箱:":"Email: ")+email,
-    "", body
-  ];
-  window.location.href = "mailto:team@rayterent.com?subject="+subject+"&body="+encodeURIComponent(lines.join("\n"));
-  msg.className = "form-msg ok";
-  msg.textContent = currentLang==="zh" ? "已開啟郵件程式" : "Mail app opened";
+  const payload = new FormData(form);
+  payload.set("_subject",currentLang === "zh" ? "【網站合作洽詢】"+name : "[Website Inquiry] "+name);
+  payload.set("_replyto",email);
+  payload.set("language",currentLang === "en" ? "English" : "Traditional Chinese");
+  payload.set("page",location.href);
+  setFormBusy(true);
+  msg.className = "form-msg pending";
+  setFormMessage("sending");
+  const controller = new AbortController();
+  const timeout = setTimeout(()=>controller.abort(),15000);
+  try{
+    const response = await fetch(FORM_ENDPOINT,{
+      method:"POST",
+      body:payload,
+      headers:{Accept:"application/json"},
+      signal:controller.signal
+    });
+    let result = null;
+    try{ result = await response.json(); }catch(e){}
+    if(!response.ok || result?.success === false || result?.success === "false") throw new Error("Submission failed");
+    form.reset();
+    msg.className = "form-msg ok";
+    setFormMessage("sent");
+  }catch(e){
+    msg.className = "form-msg bad";
+    setFormMessage("sendFailed");
+  }finally{
+    clearTimeout(timeout);
+    setFormBusy(false);
+  }
 });
 
 /* ================= Creator flow ================= */
@@ -1016,21 +1245,21 @@ BRANDS.forEach(b=>{
   const n = FLOW_COUNTS[b.id] || 0;
   for(let i=1;i<=n;i++){
     const k = real && real[i-1] ? real[i-1] : null;
-    FLOW.push({brand:b, num:i, name:k?k.n:null, img:k?k.img:null});
+    FLOW.push({brand:b, num:i, kol:k, img:k?k.img:null});
   }
 });
 function pad2(n){ return String(n).padStart(2,"0"); }
 function brandById(id){ return BRANDS.find(x => x.id === id); }
 function flowCardHTML(item, seed, clone){
   const b = item.brand;
-  const media = item.img ? `<img src="${item.img}" alt="${item.name||"KOL"}" loading="lazy" decoding="async">` : portraitSVG(seed, b.color);
-  const label = item.name ? item.name : "KOL "+pad2(item.num);
+  const label = item.kol ? kolName(item.kol) : (currentLang === "en" ? "Creator " : "KOL ")+pad2(item.num);
+  const media = item.img ? `<img src="${item.img}" alt="${label}" loading="lazy" decoding="async">` : portraitSVG(seed, b.color);
   return `<figure class="flow-card talent-card" style="--fc:${b.color}" tabindex="0" role="button"${clone?' data-flow-clone="true"':''}
     data-kb="${b.id}" data-ki="${item.num-1}" aria-label="${label}">
     ${media}
     <span class="card-tech" aria-hidden="true"></span><span class="card-scan" aria-hidden="true"></span>
     <span class="card-open" aria-hidden="true">↗</span>
-    <figcaption class="fc-tag">${label}｜${currentLang==="en" && b.en ? b.en : b.zh}</figcaption>
+    <figcaption class="fc-tag">${label}｜${brandName(b)}</figcaption>
   </figure>`;
 }
 
@@ -1154,8 +1383,8 @@ const flowMobileQuery = matchMedia("(max-width:640px)");
 if(flowMobileQuery.addEventListener) flowMobileQuery.addEventListener("change", renderFlows);
 
 /* ================= Init ================= */
-renderFlows();
-renderBrands();
+setupProductionPlayers();
+applyLang(currentLang,false);
 watchReveals(document);
 if(location.hash && SECTIONS.includes(location.hash.slice(1))){
   setTimeout(()=>document.getElementById(location.hash.slice(1)).scrollIntoView(),100);

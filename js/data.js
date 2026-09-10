@@ -2,7 +2,7 @@
    雷特娛樂官網 data.js — 資料檔(改內容只需動這裡)
    1. P         全站圖片(base64:42 位 KOL 照片、首屏 Banner 桌機/手機版)
    2. KOL_XD / KOL_GREEN / KOL_PINKIE / KOL_SOUTH / KOL_ASTER / KOL_ZMN → KOL_DATA
-      每位:{n 名稱, img 照片, intro 簡介, tags 標籤, links 社群連結}
+      每位:{n 中文名稱, nEn 英文名稱, img 照片, intro/introEn 中英簡介, tags/tagsEn 中英標籤, links 社群連結}
       links 平台鍵:tw=Twitch yt=YouTube fb=Facebook ig=Instagram tk=TikTok x=X
    3. BRANDS    六廠牌(id / 中英名 / 品牌色 / Logo)
    ============================================================ */
@@ -46,7 +46,7 @@ const KOL_PINKIE = [
   {n:"佩佩豬伯爵PpdbJ", img:P.peipei, intro:"前《特戰英豪 VALORANT》職業選手,現為賽事賽評、教練及活動主持人。具備專業競技背景與優秀口條能力,擅長品牌活動主持、電競賽事轉播、遊戲內容推廣及現場互動,兼具專業形象與娛樂效果。", tags:["遊戲","實況主","主播賽評","主持人","開箱","影音創作者"], links:{tw:"https://www.twitch.tv/ppdbj",yt:"https://www.youtube.com/@PpdbJ0320",fb:"https://www.facebook.com/profile.php?id=100065295348339",ig:"https://www.instagram.com/ppdbj0320/",tk:"https://www.tiktok.com/@ppdbj"}},
   {n:"肥宅MS", img:P.feizhai, intro:"以獨樹一幟的說書風格深受觀眾喜愛,長期深耕動漫、ACG 文化與遊戲相關內容。擅長將複雜的作品背景、角色設定與劇情脈絡轉化為生動易懂的敘事內容,兼具娛樂性與資訊深度。內容涵蓋動漫解析、遊戲體驗、熱門話題討論及社群互動,累積穩定且高黏著度的核心粉絲族群。", tags:["遊戲","動漫","ACG","影音創作者"], links:{yt:"https://www.youtube.com/channel/UCBOBS5RdHd2Owytoj4PqPqA",fb:"https://www.facebook.com/ms0437724/",ig:"https://www.instagram.com/feizhaims/",tk:"https://www.tiktok.com/@otakums00"}},
   {n:"雷克獅Rex", img:P.lexis, intro:"電競主播、賽評及活動主持人,擁有豐富大型賽事與品牌活動經驗。以自信熱血的風格與穩健台風著稱,擅長帶動現場氣氛與串聯觀眾情緒,是兼具專業度與娛樂性的全方位主持人才。", tags:["遊戲","實況主","開箱","影音創作者"], links:{tw:"https://www.twitch.tv/rexlin777",yt:"https://www.youtube.com/@rexderyt",fb:"https://www.facebook.com/rexesportlife/"}},
-  {n:"CrazyFace", img:P.crazyface, intro:"前《CS:GO》及《特戰英豪 VALORANT》職業選手，現為遊戲實況主與賽事 Watch Party 創作者。憑藉豐富的 FPS 競技經驗與專業遊戲理解，擅長戰術分析、賽事講解及娛樂互動，內容兼具專業深度與直播效果，在《特戰英豪》玩家族群中擁有穩定且高黏著度的觀眾。", tags:["遊戲","實況主","開箱","影音創作者"], links:{fb:"https://www.facebook.com/crazyfacetw/?locale=zh_TW",ig:"https://www.instagram.com/crazyface1126/",yt:"https://www.youtube.com/Crazyface",tw:"https://www.twitch.tv/crazyfacetw/videos"}}
+  {n:"CrazyFace", img:P.crazyface, intro:"前《CS:GO》及《特戰英豪 VALORANT》職業選手，現為遊戲實況主與賽事 Watch Party 創作者。憑藉豐富的 FPS 競技經驗與專業遊戲理解，擅長戰術分析、賽事講解及娛樂互動，內容兼具專業深度與直播效果，在《特戰英豪》玩家族群中擁有穩定且高黏著度的觀眾。", tags:["遊戲","實況主","開箱","影音創作者"], links:{fb:"https://www.facebook.com/crazyfacetw/",ig:"https://www.instagram.com/crazyface1126/",yt:"https://www.youtube.com/Crazyface",tw:"https://www.twitch.tv/crazyfacetw/videos"}}
 ];
 /* 南大俠娛樂 8 位 */
 const KOL_SOUTH = [
@@ -67,10 +67,77 @@ const KOL_ASTER = [
 ];
 /* 賺馬逆工作室 2 位 */
 const KOL_ZMN = [
-  {n:"吹著魔笛的浮士德", img:P.fauster, intro:"遊戲產業評論觀察家,在二十年間寫出數百篇遊戲分析長文,本人亦曾任遊戲營運部門主管、海外商務負責人、獨立遊戲開發團隊顧問、整合行銷公司總經理、數位媒體企業董事長等職位。", tags:["深度評測","3C開箱","文字攻略"], links:{yt:"https://www.youtube.com/user/h98569856",fb:"https://www.facebook.com/h9856games?locale=zh_TW",ig:"https://www.instagram.com/faustusliving/"}},
+  {n:"吹著魔笛的浮士德", img:P.fauster, intro:"遊戲產業評論觀察家,在二十年間寫出數百篇遊戲分析長文,本人亦曾任遊戲營運部門主管、海外商務負責人、獨立遊戲開發團隊顧問、整合行銷公司總經理、數位媒體企業董事長等職位。", tags:["深度評測","3C開箱","文字攻略"], links:{yt:"https://www.youtube.com/user/h98569856",fb:"https://www.facebook.com/h9856games",ig:"https://www.instagram.com/faustusliving/"}},
   {n:"The Ludens", img:P.ludens, intro:"一座為熱愛ACGN 文化、理解敘事張力、並喜於深度討論的靈魂所打造的「媒體實驗室」,專門針對獨立遊戲、產業新聞、財務報告進行快速播送。", tags:["新聞媒體","遊戲新知","資訊快報"], links:{fb:"https://www.facebook.com/profile.php?id=61575565016815",x:"https://x.com/TheLudensMedia"}}
 ];
 const KOL_DATA = {xd: KOL_XD, green: KOL_GREEN, pinkie: KOL_PINKIE, south: KOL_SOUTH, aster: KOL_ASTER, zmn: KOL_ZMN};
+/* 英文版以海外品牌與遊戲發行商為主要讀者，名稱優先採用創作者公開社群帳號。 */
+const KOL_EN = {
+  xd:[
+    {name:"Roger", intro:"One of Taiwan’s most viral Twitch personalities, Roger is a natural meme maker whose spontaneous moments frequently become major community talking points. His exceptional organic reach makes him a strong partner for high-impact gaming campaigns.", tags:["Card Games","MOBA","Anime & Gaming Culture"]},
+    {name:"NL", intro:"A former League of Legends professional and the only Taiwanese player to record a pentakill at the World Championship. He excels at long-term progression titles such as MMORPGs and strategy and simulation games, and has built a highly loyal private Facebook community of more than 60,000 members.", tags:["MOBA","Strategy & Simulation","Product Collaborations"]},
+    {name:"Hageng", intro:"A high-skill female Twitch streamer and a 2026 Monster Energy partner, known for strong gameplay across major FPS and ARPG titles.", tags:["FPS","ARPG","Tech Reviews"]},
+    {name:"EASON", intro:"A versatile console gaming creator with extensive experience across Steam indie titles. He is particularly strong in sports games, the Pokémon franchise and collectible card games.", tags:["Sports Games","Trading Card Games","Indie Games"]},
+    {name:"MMD", intro:"With broad cross-demographic appeal, MMD creates highly engaging MMORPG content rooted in anime and gaming culture, and shines in collaborative streams. His signature gacha sessions are especially popular with live audiences.", tags:["MMORPG","Anime & Gaming Culture","MOBA"]},
+    {name:"Vivi", intro:"A versatile female streamer with a strong instinct for entertainment. Vivi is highly active in creator collaborations and community tournaments, and excels at lively multiplayer streams.", tags:["Anime & Gaming Culture","Competitive Gaming","MOBA"]},
+    {name:"Tsuki", intro:"Tsuki ranked fourth worldwide in Twitch paid subscriptions in October 2023 and again in August 2026, reaching 70,000 subscribers and setting an Asian record. Her diverse content spans lifestyle, gaming and original programs, with deep familiarity with classic single-player titles.", tags:["Fighting Games","Host & MC","Soulslike","Tech Reviews"]},
+    {name:"Kant", intro:"Known for high-level gameplay, Kant specializes in strategy guides and tutorial videos. He is also the organizer of one of Taiwan’s largest FPS streaming tournaments in 2026.", tags:["FPS","ARPG","Soulslike"]},
+    {name:"AsSen", intro:"A former coach for professional MOBA and FPS teams, AsSen is known for expert gameplay analysis and technical insight. He also closely follows PC hardware and peripherals, making him a strong choice for tech-focused brand collaborations.", tags:["Tech Reviews","FPS","MOBA","Strategy & Simulation"]},
+    {name:"Virtual", intro:"Virtual specializes in strategic analysis, optimization and challenge-driven playthroughs. He is also highly experienced in rhythm games and deeply connected to anime and gaming culture.", tags:["Trading Card Games","Progression RPGs","Rhythm Games"]},
+    {name:"BG8LOCC", intro:"A popular Taiwanese rapper with more than a decade of music-making experience. He also has extensive knowledge of major console and Steam titles, making him an ideal partner for crossovers between gaming and music.", tags:["Music Production","Indie Games","AAA Games"]},
+    {name:"Shaxy", intro:"Shaxy attracts audiences with offbeat humor and an unpredictable comedic style, backed by exceptional learning speed. He has ranked within the top 5% of players in both card games and MOBAs.", tags:["MOBA","Card Games","ARPG"]},
+    {name:"Krapy", intro:"One of Taiwan’s leading destinations for FPS watch parties, Krapy’s co-streams regularly draw audiences that rival or exceed official broadcasts. His charisma, quick wit and entertaining delivery have earned him a loyal following.", tags:["Co-streaming","FPS","Host & MC"]}
+  ],
+  green:[
+    {name:"XiaoLiang", intro:"A former League of Legends professional who creates content across MOBAs, ARPGs, strategy and simulation games, and party games. His natural humor, approachable interaction and high-level gameplay make him equally effective in entertainment collaborations and instructional content.", tags:["MOBA","ARPG","Strategy & Simulation"]},
+    {name:"GreenTea", intro:"Known for his candid personality, GreenTea has built a devoted audience that affectionately calls him “Tea Bro” or “Tea Dad.” His broad game knowledge spans MOBAs, card games, anime-inspired titles, sports games, ARPGs and strategy games.", tags:["Strategy","MOBA","Card Games"]},
+    {name:"ZOD", intro:"A former professional esports coach and one of Taiwan’s leading active commentators. ZOD combines deep game expertise with sharp, humorous delivery for a highly engaged League of Legends audience.", tags:["Esports Expertise","Host & Caster","MOBA"]},
+    {name:"BabyBaby", intro:"A former member of a women’s competitive League of Legends team with an exceptional ability to learn new games quickly. In a 2026 Hearthstone program, she progressed from complete beginner to the game’s highest rank in just two weeks.", tags:["MOBA","Card Games","Simulation & Management"]},
+    {name:"SiaoHu", intro:"Known for bold, high-energy audience interaction, SiaoHu regularly shares gaming, everyday-life and trending content. She specializes in long-form progression experiences, including MMORPGs and idle and progression-based mobile games.", tags:["Strategy & Simulation","MMORPG","Simulation & Management"]},
+    {name:"JazLatte", intro:"A professional Teamfight Tactics player with an exceptional talent for strategy and other games that demand intensive analysis and decision-making.", tags:["Puzzle Games","Strategy","Card Games"]}
+  ],
+  pinkie:[
+    {name:"Overload", intro:"A flagship Twitch gaming streamer known for his passionate, candid and humorous style. With a long-standing focus on League of Legends, he commands strong social influence and a highly loyal fan base, making him an excellent partner for game launches, brand campaigns and major events.", tags:["Gaming","Live Streamer"]},
+    {name:"GoodSon", intro:"A gaming and lifestyle creator loved for his approachable, natural humor. His content spans gameplay, consumer technology, lifestyle product reviews and branded collaborations, earning strong audience trust, engagement and loyalty.", tags:["Gaming","Live Streamer","Product Reviews","Video Creator"]},
+    {name:"Luyee", intro:"A gaming and lifestyle creator with a warm, approachable image and strong community engagement. Through game streams, everyday-life content and brand partnerships, Luyee builds trust and genuine connections through an authentic, everyday perspective.", tags:["Gaming","Live Streamer","Product Reviews","Video Creator"]},
+    {name:"KMOMO", intro:"A former Overwatch professional, now working as an esports caster, analyst and gaming streamer. KMOMO pairs deep competitive experience with expert analysis, creating content that balances authority and entertainment.", tags:["Gaming","Live Streamer","Former Pro Player","Caster & Analyst"]},
+    {name:"WuWei", intro:"Originally known for FPS content, WuWei now creates across game streaming, product reviews and interactive entertainment. His candid, down-to-earth humor has built a loyal audience and consistent social influence.", tags:["Gaming","Live Streamer","Product Reviews","Video Creator"]},
+    {name:"A1Chen", intro:"An emerging gaming entertainment creator whose sincere, unfiltered interaction has built a steadily growing audience. His content spans game streaming, lifestyle and consumer-tech reviews, giving him strong relevance among younger viewers.", tags:["Gaming","Live Streamer","Product Reviews","Video Creator"]},
+    {name:"XiaoLin", intro:"A former professional Arena of Valor player and gaming streamer with a distinctive sense of humor. XiaoLin combines elite-level gameplay with entertainment and natural interaction to build a highly engaged following among younger gamers.", tags:["Gaming","Live Streamer"]},
+    {name:"PpdbJ", intro:"A former VALORANT professional who now works as a tournament analyst, coach and event host. With a strong competitive background and polished presentation skills, PpdbJ excels in branded events, esports broadcasts, game promotions and live audience engagement.", tags:["Gaming","Live Streamer","Caster & Analyst","Host & MC","Product Reviews","Video Creator"]},
+    {name:"MS", intro:"Known for a distinctive storytelling style, MS specializes in anime, gaming and the broader culture surrounding both. He translates complex lore, character development and narrative arcs into accessible, entertaining stories for a loyal core audience.", tags:["Gaming","Anime","Anime & Gaming Culture","Video Creator"]},
+    {name:"Rex", intro:"An esports caster, analyst and event host with extensive experience across major tournaments and brand activations. Rex is known for confident, high-energy delivery and a polished stage presence.", tags:["Gaming","Esports Caster","Event Host","Video Creator"]},
+    {name:"CrazyFace", intro:"A former CS:GO and VALORANT professional, now a gaming streamer and watch-party creator. Drawing on extensive FPS competition experience and expert game knowledge, CrazyFace excels at tactical analysis, match commentary and entertaining audience interaction.", tags:["Gaming","Live Streamer","Product Reviews","Video Creator"]}
+  ],
+  south:[
+    {name:"Kr1s", intro:"One of Taiwan’s most dynamic entertainment-focused streamers, Kr1s turns gameplay into highly interactive entertainment through emotional energy and spontaneous meme-making. His active, tightly knit community makes him a strong partner for brands seeking organic reach and deeper audience connection.", tags:["FPS","Indie Games","AAA Games"]},
+    {name:"Ko0416", intro:"A former PUBG professional who combines high-level gameplay with strong entertainment value. Ko0416 is especially effective across competitive and gacha-based content, reaching a highly engaged core-gaming audience.", tags:["FPS","Anime Culture","AAA Games"]},
+    {name:"Tobe", intro:"A highly approachable creator with strong community-building ability, specializing in lifestyle chat and cross-category projects. Tobe served as lead organizer of the WirForce girl-group cover dance event for two consecutive years.", tags:["Dance & Music","MOBA","Casual Games"]},
+    {name:"Doya", intro:"Known for her approachable personality and quick wit, Doya combines strong gameplay with engaging live entertainment. She specializes in Soulslike, action and shooting games.", tags:["FPS","Soulslike Action","Anime Culture"]},
+    {name:"Atu", intro:"A former esports professional and coach with deep game knowledge and strong analytical ability. Atu specializes in strategy and management titles and recently won a seasonal championship in a Nobunaga’s Ambition strategy game.", tags:["MMORPG","Strategy & Simulation","Game Guides"]},
+    {name:"Yukki", intro:"A VTuber who combines strong gaming instincts with a warm, community-oriented streaming style. Yukki learns new titles quickly, performs confidently across genres and excels in collaborative streams.", tags:["FPS","MOBA","Action Games"]},
+    {name:"GreenBow", intro:"A prominent outdoor and IRL streaming creator known for authentic interaction and a highly engaged community. GreenBow also explores action games and other formats, combining real-world broadcasts with gaming entertainment.", tags:["FPS","Japanese Games","SRPG"]},
+    {name:"DD87878", intro:"A long-time PC gaming streamer known for a distinctive personality and spontaneous comedy. DD87878 excels at turning gameplay interactions into memorable moments, with his Rust content repeatedly generating strong community conversation.", tags:["FPS","Survival","Action Games"]}
+  ],
+  aster:[
+    {name:"Leggy", intro:"Leggy has built a stable, highly loyal community through years of conversational and interactive streaming. As an early member of the LNG creator circle, he brings strong recognition among long-time livestream audiences. His work in large-scale GTA role-playing projects also demonstrates a talent for character performance and serialized storytelling.", tags:["Gaming","Live Streamer","Video Creator"]},
+    {name:"Niaws", intro:"A professional theatre actor and director with extensive stage training, Niaws brings exceptional vocal, physical and improvisational range to live content. His expressive reactions naturally generate memorable comedy and shareable memes, while his gaming, lifestyle and short-form content continues to expand beyond core gaming audiences.", tags:["Gaming","Live Streamer","Hosting","Video Creator"]},
+    {name:"Crispy Fried ABC", intro:"An illustrated-storytelling creator with a highly recognizable visual identity, combining animated graphics, memorable characters, humorous narration and everyday observation. After living in the United States for more than a decade, the creator’s signature “American Stories” series turns cross-cultural experiences into relatable entertainment.", tags:["Gaming","Illustrated Storytelling","Video Creator"]}
+  ],
+  zmn:[
+    {name:"Faustus", intro:"A veteran game-industry commentator who has published hundreds of long-form analyses over the past two decades. His career spans game operations leadership, international business development, consulting for indie development teams, general management at an integrated marketing agency and chairmanship of a digital media company.", tags:["In-depth Reviews","Tech Reviews","Written Guides"]},
+    {name:"The Ludens", intro:"An independent games media outlet for audiences passionate about anime, comics, games, light novels, narrative craft and thoughtful discussion. The Ludens delivers fast, focused coverage of indie games, industry news and company earnings reports.", tags:["Games Media","Gaming News","News Briefs"]}
+  ]
+};
+Object.entries(KOL_EN).forEach(([brandId,entries])=>{
+  entries.forEach((entry,index)=>{
+    const creator = KOL_DATA[brandId] && KOL_DATA[brandId][index];
+    if(!creator) return;
+    creator.nEn = entry.name;
+    creator.introEn = entry.intro;
+    creator.tagsEn = entry.tags;
+  });
+});
 const L = {
   xd_b:"assets/media/18d550c47545caae.webp",
   south_b:"assets/media/a7a9c501281221c2.webp", south_c:"assets/media/7baee13e90e96384.webp",
@@ -83,5 +150,5 @@ const BRANDS = [
   {id:"south", zh:"南大俠娛樂", en:"KKAJ",             color:"#B5382B", logoB:L.south_b,  logoC:L.south_c},
   {id:"pinkie", zh:"拼經紀娛樂", en:"PINKIE STUDIO",    color:"#E87DA9", logoB:L.pinkie_b, logoC:L.pinkie_c},
   {id:"aster", zh:"艾斯特娛樂", en:"Esther",           color:"#8E6BD9", logoB:null, logoC:null},
-  {id:"zmn",   zh:"賺馬逆工作室", en:"",                color:"#C8B818", logoB:null, logoC:null}
+  {id:"zmn",   zh:"賺馬逆工作室", en:"ZHUANMANI STUDIO", color:"#C8B818", logoB:null, logoC:null}
 ];
