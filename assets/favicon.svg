@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Rayter R">
+  <rect width="64" height="64" rx="12" fill="#12161B"/>
+  <path fill="#4193B9" fill-rule="evenodd" d="M13 12h24.5C48 12 54 17.3 54 26.5c0 6.9-3.5 11.4-10.2 13.3L55 53H41.2L31 41H24v12H13V12Zm11 9.5v10.8h12.2c4.4 0 6.7-1.8 6.7-5.4 0-3.6-2.3-5.4-6.7-5.4H24Z"/>
+  <path fill="#E9E34E" d="M47 7h11l-5.2 17H41.7L47 7Z"/>
+</svg>
