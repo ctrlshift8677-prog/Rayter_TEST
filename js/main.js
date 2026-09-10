@@ -9,12 +9,7 @@
 const LANGUAGE_STORAGE_KEY = "rayter-site-language";
 let currentLang = (()=>{
   const requested = new URLSearchParams(location.search).get("lang");
-  if(requested === "en" || requested === "zh") return requested;
-  try{
-    const saved = localStorage.getItem(LANGUAGE_STORAGE_KEY);
-    if(saved === "en" || saved === "zh") return saved;
-  }catch(e){}
-  return "zh";
+  return requested === "en" ? "en" : "zh";
 })();
 const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const finePointer = window.matchMedia("(hover:hover) and (pointer:fine)").matches;
@@ -992,6 +987,7 @@ const SOC = {
   fb:{n:"Facebook", c:"#1877F2", s:'<svg viewBox="0 0 24 24"><path d="M13.5 22v-8h2.7l.4-3.2h-3.1V8.7c0-.9.3-1.6 1.7-1.6h1.6V4.2c-.3 0-1.3-.1-2.4-.1-2.4 0-4 1.4-4 4.1v2.6H7.6V14h2.8v8h3.1z"/></svg>'},
   ig:{n:"Instagram", c:"#E1306C", s:'<svg viewBox="0 0 24 24"><path d="M12 2.2c3.2 0 3.6 0 4.9.1 1.2.1 1.8.2 2.2.4.6.2 1 .5 1.4.9.4.4.7.8.9 1.4.2.4.4 1 .4 2.2.1 1.3.1 1.7.1 4.9s0 3.6-.1 4.9c-.1 1.2-.2 1.8-.4 2.2a3.8 3.8 0 0 1-.9 1.4c-.4.4-.8.7-1.4.9-.4.2-1 .4-2.2.4-1.3.1-1.7.1-4.9.1s-3.6 0-4.9-.1c-1.2-.1-1.8-.2-2.2-.4a3.8 3.8 0 0 1-1.4-.9 3.8 3.8 0 0 1-.9-1.4c-.2-.4-.4-1-.4-2.2-.1-1.3-.1-1.7-.1-4.9s0-3.6.1-4.9c.1-1.2.2-1.8.4-2.2.2-.6.5-1 .9-1.4.4-.4.8-.7 1.4-.9.4-.2 1-.4 2.2-.4 1.3-.1 1.7-.1 4.9-.1zm0 1.8c-3.1 0-3.5 0-4.8.1-1.1.1-1.5.2-1.9.3-.5.2-.8.4-1.1.7-.3.3-.5.6-.7 1.1-.1.4-.3.8-.3 1.9-.1 1.3-.1 1.7-.1 4.8s0 3.5.1 4.8c.1 1.1.2 1.5.3 1.9.2.5.4.8.7 1.1.3.3.6.5 1.1.7.4.1.8.3 1.9.3 1.3.1 1.7.1 4.8.1s3.5 0 4.8-.1c1.1-.1 1.5-.2 1.9-.3.5-.2.8-.4 1.1-.7.3-.3.5-.6.7-1.1.1-.4.3-.8.3-1.9.1-1.3.1-1.7.1-4.8s0-3.5-.1-4.8c-.1-1.1-.2-1.5-.3-1.9a2 2 0 0 0-.7-1.1 2 2 0 0 0-1.1-.7c-.4-.1-.8-.3-1.9-.3-1.3-.1-1.7-.1-4.8-.1zm0 3a5 5 0 1 1 0 10 5 5 0 0 1 0-10zm0 1.8a3.2 3.2 0 1 0 0 6.4 3.2 3.2 0 0 0 0-6.4zm5.2-2.9a1.2 1.2 0 1 1 0 2.4 1.2 1.2 0 0 1 0-2.4z"/></svg>'},
   tk:{n:"TikTok", c:"#010101", s:'<svg viewBox="0 0 24 24"><path d="M16.6 3c.4 2 1.7 3.3 3.9 3.5v2.9c-1.4 0-2.7-.4-3.9-1.2v5.6c0 4.1-2.9 6.4-6 6.4A5.5 5.5 0 0 1 5 14.7c0-3.2 2.6-5.6 6-5.4v3a2.7 2.7 0 0 0-3 2.6 2.6 2.6 0 0 0 2.7 2.6c1.6 0 2.9-1.2 2.9-3.3V3h3z"/></svg>'},
+  web:{n:"Website", c:"#4197C5", s:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3.5 9h17M3.5 15h17M12 3c2.1 2.4 3.2 5.4 3.2 9S14.1 18.6 12 21M12 3C9.9 5.4 8.8 8.4 8.8 12s1.1 6.6 3.2 9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>'},
   x:{n:"X", c:"#000000", s:'<svg viewBox="0 0 24 24"><path d="M17.7 3H21l-7.3 8.3L22.2 21h-6.7l-5.2-6.2L4.4 21H1l7.8-8.9L1.5 3h6.9l4.7 5.7L17.7 3zm-1.2 16h1.9L7.1 4.9H5.1L16.5 19z"/></svg>'}
 };
 const kModal = document.getElementById("kModal");
