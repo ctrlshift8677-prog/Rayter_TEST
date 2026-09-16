@@ -297,7 +297,7 @@ function updateInterfaceLanguage(){
 const productionFrames = [...document.querySelectorAll("[data-production-frame]")];
 const localFilePreview = location.protocol === "file:";
 const YOUTUBE_API_KEY = "AIzaSyA1yx9VIStM-TbMqI_aqvvzHBaTpXxr3CE";
-const PRODUCTION_THUMB_CACHE_KEY = "rayter-youtube-thumbnails-v1";
+const PRODUCTION_THUMB_CACHE_KEY = "rayter-youtube-thumbnails-v2";
 const PRODUCTION_THUMB_CACHE_TTL = 6 * 60 * 60 * 1000;
 function productionTitle(frame){
   return frame.dataset[currentLang === "en" ? "titleEn" : "titleZh"] || "YouTube playlist";
@@ -315,29 +315,35 @@ function updateProductionLanguage(){
     if(player) player.title = title;
   });
 }
-function setProductionThumbnail(frame,videoId){
+function setProductionThumbnail(frame,videoId,thumbnailUrl=""){
   const launch = frame.querySelector(".production-launch");
   if(!launch || !videoId) return;
-  if(frame.dataset.videoId === videoId && launch.querySelector(".production-cover-image")) return;
+  const requestedSource = thumbnailUrl || `https://i.ytimg.com/vi/${encodeURIComponent(videoId)}/maxresdefault.jpg`;
+  const currentImage = launch.querySelector(".production-cover-image");
+  if(frame.dataset.videoId === videoId && currentImage && (!thumbnailUrl || currentImage.dataset.source === requestedSource)) return;
   launch.querySelector(".production-cover-image")?.remove();
-  launch.classList.remove("has-thumb");
   frame.dataset.videoId = videoId;
   const image = document.createElement("img");
   image.className = "production-cover-image";
   image.alt = "";
   image.loading = "lazy";
   image.decoding = "async";
+  image.referrerPolicy = "no-referrer";
+  image.dataset.source = requestedSource;
+  const candidates = [...new Set([
+    requestedSource,
+    `https://i.ytimg.com/vi/${encodeURIComponent(videoId)}/maxresdefault.jpg`,
+    `https://i.ytimg.com/vi/${encodeURIComponent(videoId)}/sddefault.jpg`,
+    `https://i.ytimg.com/vi/${encodeURIComponent(videoId)}/hqdefault.jpg`,
+    `https://img.youtube.com/vi/${encodeURIComponent(videoId)}/hqdefault.jpg`
+  ])];
+  let candidateIndex = 0;
   image.addEventListener("error",()=>{
-    if(image.dataset.fallback){
-      image.remove();
-      launch.classList.remove("has-thumb");
-      return;
-    }
-    image.dataset.fallback = "true";
-    image.src = `https://i.ytimg.com/vi/${encodeURIComponent(videoId)}/hqdefault.jpg`;
+    candidateIndex += 1;
+    if(candidateIndex < candidates.length) image.src = candidates[candidateIndex];
   });
   image.addEventListener("load",()=>launch.classList.add("has-thumb"));
-  image.src = `https://i.ytimg.com/vi/${encodeURIComponent(videoId)}/maxresdefault.jpg`;
+  image.src = candidates[candidateIndex];
   launch.prepend(image);
 }
 function readProductionThumbnailCache(playlist){
@@ -347,16 +353,16 @@ function readProductionThumbnailCache(playlist){
     return null;
   }
 }
-function writeProductionThumbnailCache(playlist,videoId){
+function writeProductionThumbnailCache(playlist,video){
   try{
     const cache = JSON.parse(localStorage.getItem(PRODUCTION_THUMB_CACHE_KEY) || "{}");
-    cache[playlist] = {videoId,checkedAt:Date.now()};
+    cache[playlist] = {...video,checkedAt:Date.now()};
     localStorage.setItem(PRODUCTION_THUMB_CACHE_KEY,JSON.stringify(cache));
   }catch(error){}
 }
 async function fetchLatestProductionVideo(playlist){
   let pageToken = "";
-  let latestVideoId = "";
+  let latestVideo = null;
   let latestAddedAt = -1;
   do{
     const query = new URLSearchParams({
@@ -373,33 +379,38 @@ async function fetchLatestProductionVideo(playlist){
       const videoId = item.contentDetails?.videoId;
       if(!videoId) return;
       const addedAt = Date.parse(item.snippet?.publishedAt || item.contentDetails?.videoPublishedAt || "") || 0;
-      if(!latestVideoId || addedAt > latestAddedAt){
-        latestVideoId = videoId;
+      if(!latestVideo || addedAt > latestAddedAt){
+        const thumbnails = item.snippet?.thumbnails || {};
+        latestVideo = {
+          videoId,
+          thumbnailUrl:thumbnails.maxres?.url || thumbnails.standard?.url || thumbnails.high?.url || thumbnails.medium?.url || thumbnails.default?.url || ""
+        };
         latestAddedAt = addedAt;
       }
     });
     pageToken = data.nextPageToken || "";
   }while(pageToken);
-  return latestVideoId;
+  return latestVideo;
 }
 async function loadProductionThumbnail(frame){
   const launch = frame.querySelector(".production-launch");
   const playlist = frame.dataset.playlist;
   if(!launch || !playlist) return;
   launch.setAttribute("aria-busy","true");
+  if(!frame.dataset.videoId && frame.dataset.fallbackVideo) setProductionThumbnail(frame,frame.dataset.fallbackVideo);
   const cached = readProductionThumbnailCache(playlist);
-  if(cached?.videoId) setProductionThumbnail(frame,cached.videoId);
+  if(cached?.videoId) setProductionThumbnail(frame,cached.videoId,cached.thumbnailUrl || "");
   if(cached?.checkedAt && Date.now()-cached.checkedAt < PRODUCTION_THUMB_CACHE_TTL){
     launch.setAttribute("aria-busy","false");
     return;
   }
   try{
-    const videoId = await fetchLatestProductionVideo(playlist);
-    if(!videoId) throw new Error("YouTube playlist is empty");
-    setProductionThumbnail(frame,videoId);
-    writeProductionThumbnailCache(playlist,videoId);
+    const video = await fetchLatestProductionVideo(playlist);
+    if(!video?.videoId) throw new Error("YouTube playlist is empty");
+    setProductionThumbnail(frame,video.videoId,video.thumbnailUrl);
+    writeProductionThumbnailCache(playlist,video);
   }catch(error){
-    if(!cached?.videoId) frame.classList.add("thumbnail-unavailable");
+    if(!frame.dataset.videoId) frame.classList.add("thumbnail-unavailable");
   }finally{
     launch.setAttribute("aria-busy","false");
   }
@@ -438,6 +449,9 @@ function setupProductionPlayers(){
       }),{rootMargin:"600px 0px"})
     : null;
   productionFrames.forEach(frame=>{
+    const seededVideo = frame.dataset.videoId || frame.dataset.fallbackVideo;
+    const seededImage = frame.querySelector(".production-cover-image");
+    if(seededVideo) setProductionThumbnail(frame,seededVideo,seededImage?.getAttribute("src") || "");
     frame.querySelector(".production-launch")?.addEventListener("click",()=>launchProductionPlaylist(frame,true));
     if(thumbnailObserver) thumbnailObserver.observe(frame);
     else loadProductionThumbnail(frame);
@@ -1290,6 +1304,8 @@ form.addEventListener("submit",async e=>{
   if(submitButton.disabled) return;
   form.querySelectorAll(".err").forEach(x=>x.classList.remove("err"));
   const name = form.fName.value.trim();
+  const tel = form.fTel.value.trim();
+  const mobile = form.fMobile.value.trim();
   const email = form.fEmail.value.trim();
   const body = form.fMsg.value.trim();
   const cap = document.getElementById("fCaptcha").value.trim().toUpperCase();
@@ -1305,11 +1321,20 @@ form.addEventListener("submit",async e=>{
     bad[0].focus();
     return;
   }
-  const payload = new FormData(form);
-  payload.set("_subject",currentLang === "zh" ? "【網站合作洽詢】"+name : "[Website Inquiry] "+name);
-  payload.set("_replyto",email);
-  payload.set("language",currentLang === "en" ? "English" : "Traditional Chinese");
-  payload.set("page",location.href);
+  const labels = currentLang === "zh"
+    ? {name:"客戶名稱",tel:"聯絡電話",mobile:"手機",email:"信箱",message:"留言內容"}
+    : {name:"Company / Contact Name",tel:"Phone",mobile:"Mobile",email:"Email",message:"Message"};
+  const payload = new FormData();
+  payload.append(labels.name,name);
+  payload.append(labels.tel,tel || "—");
+  payload.append(labels.mobile,mobile || "—");
+  payload.append(labels.email,email);
+  payload.append(labels.message,body);
+  payload.append("_subject",currentLang === "zh" ? `【雷特娛樂｜合作洽詢】${name}` : `[Rayter Entertainment | Business Inquiry] ${name}`);
+  payload.append("_replyto",email);
+  payload.append("_template","box");
+  payload.append("_captcha","false");
+  payload.append("_honey",form.querySelector(".form-honey")?.value || "");
   setFormBusy(true);
   msg.className = "form-msg pending";
   setFormMessage("sending");
