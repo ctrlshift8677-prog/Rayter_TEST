@@ -1273,8 +1273,7 @@ const form = document.getElementById("contactForm");
 const msg = document.getElementById("formMsg");
 const submitButton = document.getElementById("submitInquiry");
 const resetButton = form.querySelector('[type="reset"]');
-/* 測試完成後只需更換這一行的收件信箱。 */
-const CONTACT_RECIPIENT = "bella182399@gmail.com";
+const CONTACT_RECIPIENT = "team@rayterent.com";
 const FORM_ENDPOINT = `https://formsubmit.co/ajax/${CONTACT_RECIPIENT}`;
 form.action = `https://formsubmit.co/${CONTACT_RECIPIENT}`;
 const FORM_MESSAGES = {
