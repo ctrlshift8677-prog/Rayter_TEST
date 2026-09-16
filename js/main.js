@@ -252,8 +252,8 @@ function updateInterfaceLanguage(){
     : "雷特娛樂 Rayter Entertainment";
   const description = document.querySelector('meta[name="description"]');
   if(description) description.content = currentLang === "en"
-    ? "Rayter Digital Entertainment connects brands with gaming creators through talent matching, content production, integrated campaigns and live activations."
-    : "雷特數位娛樂深耕遊戲、直播與 KOL 行銷領域,專注於商業合作、遊戲行銷企劃、內容整合與專案執行。";
+    ? "Rayter Digital Entertainment specializes in gaming, livestreaming and creator marketing, helping brands reach the right communities and build lasting influence through integrated strategies."
+    : "雷特數位娛樂深耕遊戲、直播與創作者行銷，以整合策略協助品牌精準打進目標圈層，讓聲量發生，讓影響延續。";
   setLocalizedAttribute(".site-header .brand","aria-label","雷特娛樂，回到頁首","Rayter Entertainment, back to top");
   setLocalizedAttribute(".site-header .brand img, .footer-brand img","alt","雷特娛樂 Rayter Entertainment","Rayter Digital Entertainment");
   setLocalizedAttribute(".main-nav","aria-label","主選單","Main navigation");
@@ -296,6 +296,9 @@ function updateInterfaceLanguage(){
 /* ================= Content production playlists ================= */
 const productionFrames = [...document.querySelectorAll("[data-production-frame]")];
 const localFilePreview = location.protocol === "file:";
+const YOUTUBE_API_KEY = "AIzaSyA1yx9VIStM-TbMqI_aqvvzHBaTpXxr3CE";
+const PRODUCTION_THUMB_CACHE_KEY = "rayter-youtube-thumbnails-v1";
+const PRODUCTION_THUMB_CACHE_TTL = 6 * 60 * 60 * 1000;
 function productionTitle(frame){
   return frame.dataset[currentLang === "en" ? "titleEn" : "titleZh"] || "YouTube playlist";
 }
@@ -312,6 +315,95 @@ function updateProductionLanguage(){
     if(player) player.title = title;
   });
 }
+function setProductionThumbnail(frame,videoId){
+  const launch = frame.querySelector(".production-launch");
+  if(!launch || !videoId) return;
+  if(frame.dataset.videoId === videoId && launch.querySelector(".production-cover-image")) return;
+  launch.querySelector(".production-cover-image")?.remove();
+  launch.classList.remove("has-thumb");
+  frame.dataset.videoId = videoId;
+  const image = document.createElement("img");
+  image.className = "production-cover-image";
+  image.alt = "";
+  image.loading = "lazy";
+  image.decoding = "async";
+  image.addEventListener("error",()=>{
+    if(image.dataset.fallback){
+      image.remove();
+      launch.classList.remove("has-thumb");
+      return;
+    }
+    image.dataset.fallback = "true";
+    image.src = `https://i.ytimg.com/vi/${encodeURIComponent(videoId)}/hqdefault.jpg`;
+  });
+  image.addEventListener("load",()=>launch.classList.add("has-thumb"));
+  image.src = `https://i.ytimg.com/vi/${encodeURIComponent(videoId)}/maxresdefault.jpg`;
+  launch.prepend(image);
+}
+function readProductionThumbnailCache(playlist){
+  try{
+    return JSON.parse(localStorage.getItem(PRODUCTION_THUMB_CACHE_KEY) || "{}")[playlist] || null;
+  }catch(error){
+    return null;
+  }
+}
+function writeProductionThumbnailCache(playlist,videoId){
+  try{
+    const cache = JSON.parse(localStorage.getItem(PRODUCTION_THUMB_CACHE_KEY) || "{}");
+    cache[playlist] = {videoId,checkedAt:Date.now()};
+    localStorage.setItem(PRODUCTION_THUMB_CACHE_KEY,JSON.stringify(cache));
+  }catch(error){}
+}
+async function fetchLatestProductionVideo(playlist){
+  let pageToken = "";
+  let latestVideoId = "";
+  let latestAddedAt = -1;
+  do{
+    const query = new URLSearchParams({
+      part:"contentDetails,snippet",
+      maxResults:"50",
+      playlistId:playlist,
+      key:YOUTUBE_API_KEY
+    });
+    if(pageToken) query.set("pageToken",pageToken);
+    const response = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?${query.toString()}`);
+    if(!response.ok) throw new Error("YouTube playlist request failed");
+    const data = await response.json();
+    (data.items || []).forEach(item=>{
+      const videoId = item.contentDetails?.videoId;
+      if(!videoId) return;
+      const addedAt = Date.parse(item.snippet?.publishedAt || item.contentDetails?.videoPublishedAt || "") || 0;
+      if(!latestVideoId || addedAt > latestAddedAt){
+        latestVideoId = videoId;
+        latestAddedAt = addedAt;
+      }
+    });
+    pageToken = data.nextPageToken || "";
+  }while(pageToken);
+  return latestVideoId;
+}
+async function loadProductionThumbnail(frame){
+  const launch = frame.querySelector(".production-launch");
+  const playlist = frame.dataset.playlist;
+  if(!launch || !playlist) return;
+  launch.setAttribute("aria-busy","true");
+  const cached = readProductionThumbnailCache(playlist);
+  if(cached?.videoId) setProductionThumbnail(frame,cached.videoId);
+  if(cached?.checkedAt && Date.now()-cached.checkedAt < PRODUCTION_THUMB_CACHE_TTL){
+    launch.setAttribute("aria-busy","false");
+    return;
+  }
+  try{
+    const videoId = await fetchLatestProductionVideo(playlist);
+    if(!videoId) throw new Error("YouTube playlist is empty");
+    setProductionThumbnail(frame,videoId);
+    writeProductionThumbnailCache(playlist,videoId);
+  }catch(error){
+    if(!cached?.videoId) frame.classList.add("thumbnail-unavailable");
+  }finally{
+    launch.setAttribute("aria-busy","false");
+  }
+}
 function launchProductionPlaylist(frame,autoplay){
   const playlistUrl = frame.dataset.playlistUrl;
   if(localFilePreview){
@@ -325,23 +417,30 @@ function launchProductionPlaylist(frame,autoplay){
   if(!videoId) params.set("listType","playlist");
   if(location.origin && location.origin !== "null") params.set("origin",location.origin);
   const player = document.createElement("iframe");
-  player.src = `https://www.youtube.com/embed${videoId ? "/"+encodeURIComponent(videoId) : ""}?${params.toString()}`;
+  player.src = `https://www.youtube-nocookie.com/embed${videoId ? "/"+encodeURIComponent(videoId) : ""}?${params.toString()}`;
   player.title = productionTitle(frame);
   player.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
   player.referrerPolicy = "strict-origin-when-cross-origin";
   player.loading = "lazy";
   player.allowFullscreen = true;
+  player.tabIndex = 0;
   frame.classList.add("is-playing");
   frame.replaceChildren(player);
+  requestAnimationFrame(()=>player.focus({preventScroll:true}));
 }
 function setupProductionPlayers(){
   document.documentElement.classList.toggle("local-file-preview",localFilePreview);
+  const thumbnailObserver = "IntersectionObserver" in window
+    ? new IntersectionObserver(entries=>entries.forEach(entry=>{
+        if(!entry.isIntersecting) return;
+        thumbnailObserver.unobserve(entry.target);
+        loadProductionThumbnail(entry.target);
+      }),{rootMargin:"600px 0px"})
+    : null;
   productionFrames.forEach(frame=>{
-    if(localFilePreview){
-      frame.querySelector(".production-launch")?.addEventListener("click",()=>launchProductionPlaylist(frame,true));
-      return;
-    }
-    launchProductionPlaylist(frame,false);
+    frame.querySelector(".production-launch")?.addEventListener("click",()=>launchProductionPlaylist(frame,true));
+    if(thumbnailObserver) thumbnailObserver.observe(frame);
+    else loadProductionThumbnail(frame);
   });
   updateProductionLanguage();
 }
