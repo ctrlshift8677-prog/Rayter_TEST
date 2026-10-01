@@ -1362,7 +1362,7 @@ form.addEventListener("submit",async e=>{
 });
 
 /* ================= Creator flow ================= */
-const FLOW_COUNTS = {xd:13, pinkie:11, south:8, green:6, aster:3, zmn:2}; /* 共 43 */
+const FLOW_COUNTS = {xd:13, pinkie:12, south:8, green:6, aster:3, zmn:2}; /* 共 44 */
 const FLOW = [];
 BRANDS.forEach(b=>{
   const real = KOL_DATA[b.id];
